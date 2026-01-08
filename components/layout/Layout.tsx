@@ -1,0 +1,27 @@
+'use client';
+
+import React from 'react';
+import Header from './Header';
+
+interface LayoutProps {
+    children: React.ReactNode;
+    showHeader?: boolean;
+    showNotifications?: boolean;
+}
+
+const Layout: React.FC<LayoutProps> = ({
+    children,
+    showHeader = true,
+    showNotifications = false
+}) => {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-light-bg via-white to-light-bg dark:from-dark-bg dark:via-gray-900 dark:to-dark-bg">
+            {showHeader && <Header showNotifications={showNotifications} />}
+            <main className="container mx-auto px-4 py-8">
+                {children}
+            </main>
+        </div>
+    );
+};
+
+export default Layout;

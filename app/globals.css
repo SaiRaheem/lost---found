@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #2ECC71;
+    --primary-hover: #27AE60;
+    --accent: #F1C40F;
+    --accent-hover: #F39C12;
+  }
+
+  body {
+    @apply bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100;
+    @apply transition-colors duration-300;
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism Card */
+  .glass-card {
+    @apply bg-white/10 dark:bg-black/20;
+    @apply backdrop-blur-xl;
+    @apply border border-white/20 dark:border-white/10;
+    @apply rounded-2xl;
+    @apply shadow-glass dark:shadow-glass-dark;
+  }
+
+  /* Glassmorphism Input */
+  .glass-input {
+    @apply bg-white/50 dark:bg-black/30;
+    @apply backdrop-blur-md;
+    @apply border border-gray-300/50 dark:border-gray-600/50;
+    @apply rounded-xl px-4 py-3;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
+    @apply transition-all duration-200;
+    @apply placeholder:text-gray-500 dark:placeholder:text-gray-400;
+  }
+
+  /* Button Base */
+  .btn {
+    @apply px-6 py-3 rounded-xl font-semibold;
+    @apply transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply active:scale-95;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    @apply btn;
+    @apply bg-primary hover:bg-primary-hover;
+    @apply text-white;
+    @apply shadow-lg hover:shadow-glow;
+    @apply focus:ring-primary/50;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply btn;
+    @apply bg-gray-200 dark:bg-gray-700;
+    @apply hover:bg-gray-300 dark:hover:bg-gray-600;
+    @apply text-gray-900 dark:text-gray-100;
+  }
+
+  /* Accent Button */
+  .btn-accent {
+    @apply btn;
+    @apply bg-accent hover:bg-accent-hover;
+    @apply text-gray-900;
+    @apply shadow-lg hover:shadow-glow-accent;
+  }
+
+  /* Danger Button */
+  .btn-danger {
+    @apply btn;
+    @apply bg-red-500 hover:bg-red-600;
+    @apply text-white;
+    @apply shadow-lg;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-finder {
+    @apply badge bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300;
+  }
+
+  .badge-owner {
+    @apply badge bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300;
+  }
+
+  .badge-pending {
+    @apply badge bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300;
+  }
+
+  .badge-active {
+    @apply badge bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300;
+  }
+
+  .badge-returned {
+    @apply badge bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300;
+  }
+}
+
+@layer utilities {
+
+  /* Scrollbar Styles */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+    @apply hover:bg-gray-400 dark:hover:bg-gray-500;
+  }
+
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  }
+
+  /* Glow Effect */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+  }
+}
+
+/* Custom Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%);
+  background-size: 1000px 100%;
+}
+
+/* Datetime input styling for better calendar icon visibility */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(0.7);
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(0.8);
+  background-color: rgba(99, 102, 241, 0.2);
+}

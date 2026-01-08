@@ -1,0 +1,478 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Layout from '@/components/layout/Layout';
+import type { LostItem, FoundItem } from '@/types/database.types';
+import { formatForDisplay } from '@/utils/date-utils';
+import {
+    getAdminStats,
+    getAllLostItems,
+    getAllFoundItems,
+    getAllMatches,
+    getRecentActivity
+} from '@/services/supabase/admin.service';
+import { checkCurrentUserIsAdmin } from '@/services/supabase/admin-auth.service';
+import { supabase } from '@/services/supabase/client';
+
+export default function AdminPage() {
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [stats, setStats] = useState({
+        totalLostItems: 0,
+        totalFoundItems: 0,
+        totalMatches: 0,
+        successfulReturns: 0,
+        activeUsers: 0,
+    });
+
+    const [lostItems, setLostItems] = useState<LostItem[]>([]);
+    const [foundItems, setFoundItems] = useState<FoundItem[]>([]);
+    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'overview' | 'lost' | 'found' | 'matches'>('overview');
+
+    useEffect(() => {
+        const checkAdminAndFetchData = async () => {
+            try {
+                setIsLoading(true);
+
+                // Check if user is admin
+                const isAdminUser = await checkCurrentUserIsAdmin();
+
+                if (!isAdminUser) {
+                    alert('Access denied. Admin privileges required.');
+                    router.push('/home');
+                    return;
+                }
+
+                setIsAuthorized(true);
+
+                // Fetch all data in parallel
+                const [statsData, lostData, foundData, activityData] = await Promise.all([
+                    getAdminStats(),
+                    getAllLostItems(),
+                    getAllFoundItems(),
+                    getRecentActivity(),
+                ]);
+
+                setStats(statsData);
+                setLostItems(lostData);
+                setFoundItems(foundData);
+                setRecentActivity(activityData);
+            } catch (error) {
+                console.error('Error fetching admin data:', error);
+                alert('Failed to load admin data');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        checkAdminAndFetchData();
+    }, [router]);
+
+    // Real-time subscriptions for instant updates
+    useEffect(() => {
+        if (!isAuthorized) return;
+
+        const fetchData = async () => {
+            try {
+                const [statsData, lostData, foundData, activityData] = await Promise.all([
+                    getAdminStats(),
+                    getAllLostItems(),
+                    getAllFoundItems(),
+                    getRecentActivity(),
+                ]);
+
+                setStats(statsData);
+                setLostItems(lostData);
+                setFoundItems(foundData);
+                setRecentActivity(activityData);
+            } catch (error) {
+                console.error('Error refreshing admin data:', error);
+            }
+        };
+
+        // Subscribe to lost items changes
+        const lostChannel = supabase
+            .channel('admin-lost-items')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'lost_items' }, () => {
+                console.log('Lost items changed, refreshing...');
+                fetchData();
+            })
+            .subscribe();
+
+        // Subscribe to found items changes
+        const foundChannel = supabase
+            .channel('admin-found-items')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'found_items' }, () => {
+                console.log('Found items changed, refreshing...');
+                fetchData();
+            })
+            .subscribe();
+
+        // Subscribe to matches changes
+        const matchChannel = supabase
+            .channel('admin-matches')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
+                console.log('Matches changed, refreshing...');
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(lostChannel);
+            supabase.removeChannel(foundChannel);
+            supabase.removeChannel(matchChannel);
+        };
+    }, [isAuthorized]);
+
+    if (isLoading) {
+        return (
+            <Layout showHeader showNotifications>
+                <div className="max-w-7xl mx-auto py-8">
+                    <div className="glass-card p-12 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            {isAuthorized ? 'Loading admin dashboard...' : 'Checking permissions...'}
+                        </p>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
+    if (!isAuthorized) {
+        return null; // Will redirect
+    }
+
+    return (
+        <Layout showHeader showNotifications>
+            <div className="max-w-7xl mx-auto py-8 space-y-6">
+                {/* Header */}
+                <div>
+                    <h1 className="text-3xl font-bold text-gradient mb-2">Admin Dashboard</h1>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Manage and monitor the Lost & Found system
+                    </p>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Lost Items</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalLostItems}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Found Items</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalFoundItems}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Matches</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalMatches}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Returned</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.successfulReturns}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.activeUsers}</p>
+                            </div>
+                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="glass-card p-2 flex gap-2">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'overview'
+                            ? 'bg-primary text-white shadow-glow'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                            }`}
+                    >
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('lost')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'lost'
+                            ? 'bg-primary text-white shadow-glow'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                            }`}
+                    >
+                        Lost Items
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('found')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'found'
+                            ? 'bg-primary text-white shadow-glow'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                            }`}
+                    >
+                        Found Items
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('matches')}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'matches'
+                            ? 'bg-primary text-white shadow-glow'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                            }`}
+                    >
+                        Matches
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="glass-card p-6">
+                    {activeTab === 'overview' && (
+                        <div className="space-y-6">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">System Overview</h2>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Recent Activity</h3>
+                                    <div className="space-y-3">
+                                        {recentActivity.length > 0 ? (
+                                            recentActivity.map((activity, index) => (
+                                                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                                    <div className={`w-2 h-2 rounded-full ${activity.type === 'match' ? 'bg-green-500' :
+                                                        activity.type === 'found' ? 'bg-blue-500' :
+                                                            'bg-purple-500'
+                                                        }`}></div>
+                                                    <p className="text-sm text-gray-700 dark:text-gray-300">{activity.message}</p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                                                No recent activity
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Success Rate</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Items Returned</span>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {Math.round((stats.successfulReturns / stats.totalLostItems) * 100)}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div
+                                                    className="bg-primary h-2 rounded-full transition-all"
+                                                    style={{ width: `${(stats.successfulReturns / stats.totalLostItems) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between mb-2">
+                                                <span className="text-sm text-gray-600 dark:text-gray-400">Match Rate</span>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {Math.round((stats.totalMatches / stats.totalLostItems) * 100)}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div
+                                                    className="bg-accent h-2 rounded-full transition-all"
+                                                    style={{ width: `${(stats.totalMatches / stats.totalLostItems) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'lost' && (
+                        <div className="space-y-4">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Lost Items</h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Image</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Category</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Location</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Owner</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Contact</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date Lost</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {lostItems.length > 0 ? (
+                                            lostItems.map((item) => (
+                                                <tr key={item.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-3 px-4">
+                                                        {item.image_url ? (
+                                                            <img src={item.image_url} alt={item.item_name} className="w-12 h-12 object-cover rounded" />
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                                                                <span className="text-xs text-gray-400">No img</span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">{item.item_name}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.item_category}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.description}>
+                                                        {item.description || 'N/A'}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.location}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.owner_name}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.owner_contact}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                                                        {formatForDisplay(item.datetime_lost, true)}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className={`badge-${item.status}`}>
+                                                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                                                    No lost items found
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'found' && (
+                        <div className="space-y-4">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Found Items</h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Image</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Category</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Location</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Finder</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Contact</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date Found</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {foundItems.length > 0 ? (
+                                            foundItems.map((item) => (
+                                                <tr key={item.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-3 px-4">
+                                                        {item.image_url ? (
+                                                            <img src={item.image_url} alt={item.item_name} className="w-12 h-12 object-cover rounded" />
+                                                        ) : (
+                                                            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
+                                                                <span className="text-xs text-gray-400">No img</span>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">{item.item_name}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.item_category}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.description}>
+                                                        {item.description || 'N/A'}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.location}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.finder_name}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.finder_contact}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                                                        {formatForDisplay(item.datetime_found, true)}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className={`badge-${item.status}`}>
+                                                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                                                    No found items
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'matches' && (
+                        <div className="space-y-4">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Matches</h2>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                Note: Chat messages are private and cannot be viewed by admins for privacy reasons.
+                            </p>
+                            <div className="text-center py-12">
+                                <svg className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <p className="text-gray-500 dark:text-gray-400">Match details will be displayed here</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Layout>
+    );
+}
