@@ -233,10 +233,24 @@ export default function ReportDetailPage() {
     const handleRejectMatch = async (matchId: string) => {
         try {
             await rejectMatch(matchId, userRole);
-            // Refresh matches
+
+            // Update item status back to 'active' when match is rejected
+            await updateItemStatus(itemId, itemType, 'active');
+
+            // Refresh matches and item data
             const fetchedMatches = await getMatchesForItem(itemId, itemType);
             setMatches(fetchedMatches);
-            alert('Match rejected.');
+
+            // Refresh item to update status
+            const itemData = itemType === 'lost'
+                ? await supabase.from('lost_items').select('*').eq('id', itemId).single()
+                : await supabase.from('found_items').select('*').eq('id', itemId).single();
+
+            if (itemData.data) {
+                setItem(itemData.data);
+            }
+
+            alert('Match rejected. Item status updated to active.');
         } catch (error) {
             console.error('Error rejecting match:', error);
             alert('Failed to reject match');

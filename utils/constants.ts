@@ -79,15 +79,15 @@ export const COLORS = {
 
 // Matching Thresholds
 export const MATCHING = {
-    MIN_SCORE: 50, // Lowered to allow more matches (was 65)
-    MIN_NAME_SIMILARITY: 3, // Lowered for more flexible name matching (was 4)
+    MIN_SCORE: 65, // Increased threshold - more strict matching
+    MIN_NAME_SIMILARITY: 4, // Stricter name matching
     WEIGHTS: {
-        CATEGORY: 25, // Increased - category match is critical
-        LOCATION: 20,
-        TFIDF: 25,
-        FUZZY: 15, // Increased - name similarity is important
-        ATTRIBUTES: 10, // Reduced
-        DATE: 5, // Reduced - less critical
+        CATEGORY: 15, // Reduced - category alone shouldn't match different items
+        LOCATION: 25, // Increased - location is very important
+        TFIDF: 30, // Increased - description similarity is most important
+        FUZZY: 20, // Increased - item name similarity is critical
+        ATTRIBUTES: 8, // Slightly reduced
+        DATE: 2, // Significantly reduced - many items reported same day
     },
 } as const;
 
