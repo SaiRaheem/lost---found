@@ -19,6 +19,7 @@ export interface LostItem {
     item_name: string;
     item_category: string;
     description: string;
+    purpose?: string;
     location: string;
     community: string;
     area?: string;
@@ -40,6 +41,7 @@ export interface FoundItem {
     item_name: string;
     item_category: string;
     description: string;
+    purpose?: string;
     location: string;
     community: string;
     area?: string;

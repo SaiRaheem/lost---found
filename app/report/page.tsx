@@ -322,6 +322,16 @@ function ReportPageContent() {
                             error={errors.description}
                         />
 
+                        {/* Purpose/Use */}
+                        <Textarea
+                            label="What is this item used for?"
+                            value={formData.purpose || ''}
+                            onChange={(e) => handleChange('purpose', e.target.value)}
+                            placeholder="e.g., For taking notes in class, For listening to music, For carrying books"
+                            helperText="Optional: Briefly describe what you use this item for"
+                            rows={2}
+                        />
+
                         {/* Image Upload */}
                         <ImageUpload
                             onImageSelect={setSelectedImage}

@@ -1,15 +1,54 @@
-// Item Categories
+// Item Categories - Expanded for better matching
 export const ITEM_CATEGORIES = [
-    'Electronics',
-    'Documents',
-    'Accessories',
-    'Clothing',
-    'Bags',
+    // Electronics
+    'Phone',
+    'Laptop',
+    'Tablet',
+    'Headphones/Earphones',
+    'Charger/Cable',
+    'Power Bank',
+    'Smartwatch',
+    'Calculator',
+    'USB Drive/Hard Drive',
+
+    // Stationery
+    'Pen',
+    'Pencil',
+    'Notebook',
+    'Textbook',
+    'File/Folder',
+    'Eraser',
+    'Ruler/Geometry Box',
+    'Marker/Highlighter',
+
+    // Personal Items
+    'Wallet/Purse',
     'Keys',
-    'Wallet',
-    'Books',
+    'ID Card',
+    'Glasses/Sunglasses',
+    'Watch',
     'Jewelry',
+    'Umbrella',
+
+    // Bags
+    'Backpack',
+    'Handbag',
+    'Lunch Box/Tiffin',
+    'Water Bottle',
+
+    // Clothing
+    'Jacket/Sweater',
+    'Scarf',
+    'Cap/Hat',
+    'Shoes',
+
+    // Sports Equipment
     'Sports Equipment',
+    'Gym Bag',
+
+    // Other
+    'Documents',
+    'Money',
     'Other',
 ] as const;
 
