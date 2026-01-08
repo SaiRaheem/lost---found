@@ -42,14 +42,14 @@ export default function MyReportsPage() {
                 };
 
                 // Convert to ReportItem format with unread notification counts
-                const lostReports = lostItems.map((item) => ({
+                const lostReports: ReportItem[] = lostItems.map((item) => ({
                     ...item,
                     role: 'owner' as const,
                     type: 'lost' as const,
                     unreadCount: 0,
                 }));
 
-                const foundReports = foundItems.map((item) => ({
+                const foundReports: ReportItem[] = foundItems.map((item) => ({
                     ...item,
                     role: 'finder' as const,
                     type: 'found' as const,
