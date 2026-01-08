@@ -76,6 +76,7 @@ export interface MatchBreakdown {
     tfidf_score: number;
     fuzzy_score: number;
     attribute_score: number;
+    purpose_score: number;
     date_score: number;
     total_score: number;
 }

@@ -85,35 +85,59 @@ function toRad(degrees: number): number {
 }
 
 /**
- * Calculate attribute match score (0-10 points)
+ * Calculate attribute match score (0-5 points)
+ * Extracts and compares colors, brands, and models
  */
 function calculateAttributeScore(lostItem: LostItem, foundItem: FoundItem): number {
     let score = 0;
 
-    const lostText = `${lostItem.item_name} ${lostItem.description}`;
-    const foundText = `${foundItem.item_name} ${foundItem.description}`;
+    // Extract attributes from descriptions
+    const lostColors = extractColors(lostItem.description);
+    const foundColors = extractColors(foundItem.description);
+    const lostBrands = extractBrands(lostItem.description);
+    const foundBrands = extractBrands(foundItem.description);
+    const lostModels = extractModels(lostItem.description);
+    const foundModels = extractModels(foundItem.description);
 
-    // Extract attributes
-    const lostBrands = extractBrands(lostText);
-    const foundBrands = extractBrands(foundText);
-    const lostColors = extractColors(lostText);
-    const foundColors = extractColors(foundText);
-    const lostModels = extractModels(lostText);
-    const foundModels = extractModels(foundText);
+    // Color match (2 points)
+    if (lostColors.length > 0 && foundColors.length > 0) {
+        const colorMatch = lostColors.some(c => foundColors.includes(c));
+        if (colorMatch) score += 2;
+    }
 
-    // Brand match (5 points)
-    const brandMatch = lostBrands.some(b => foundBrands.includes(b));
-    if (brandMatch) score += 5;
+    // Brand match (2 points)
+    if (lostBrands.length > 0 && foundBrands.length > 0) {
+        const brandMatch = lostBrands.some(b => foundBrands.includes(b));
+        if (brandMatch) score += 2;
+    }
 
-    // Color match (5 points)
-    const colorMatch = lostColors.some(c => foundColors.includes(c));
-    if (colorMatch) score += 5;
-
-    // Model match (5 points)
-    const modelMatch = lostModels.some(m => foundModels.includes(m));
-    if (modelMatch) score += 5;
+    // Model match (1 point)
+    if (lostModels.length > 0 && foundModels.length > 0) {
+        const modelMatch = lostModels.some(m => foundModels.includes(m));
+        if (modelMatch) score += 1;
+    }
 
     return Math.min(score, MATCHING.WEIGHTS.ATTRIBUTES);
+}
+
+/**
+ * Calculate purpose match score (0-10 points)
+ * Compares what the item is used for using TF-IDF similarity
+ */
+function calculatePurposeScore(lostItem: LostItem, foundItem: FoundItem): number {
+    // If both have purpose filled, compare them
+    if (lostItem.purpose && foundItem.purpose) {
+        const similarity = calculateTFIDFSimilarity(lostItem.purpose, foundItem.purpose);
+        return Math.round(similarity * MATCHING.WEIGHTS.PURPOSE);
+    }
+
+    // If only one has purpose, give partial credit (30% of max score)
+    if (lostItem.purpose || foundItem.purpose) {
+        return Math.round(MATCHING.WEIGHTS.PURPOSE * 0.3);
+    }
+
+    // If neither has purpose, give 50% credit (neutral)
+    return Math.round(MATCHING.WEIGHTS.PURPOSE * 0.5);
 }
 
 /**
@@ -132,20 +156,31 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
 
     const attribute_score = calculateAttributeScore(lostItem, foundItem);
 
-    const date_score = calculateDateProximity(
+    const purpose_score = calculatePurposeScore(lostItem, foundItem);
+
+    const dateProximity = calculateDateProximity(
         lostItem.datetime_lost,
         foundItem.datetime_found
     );
+    const date_score = Math.round((dateProximity / 10) * MATCHING.WEIGHTS.DATE);
 
-    const total_score = category_score + location_score + tfidf_score +
-        fuzzy_score + attribute_score + date_score;
+    const total_score = Math.round(
+        category_score +
+        location_score +
+        (tfidf_score * MATCHING.WEIGHTS.TFIDF) +
+        (fuzzy_score * MATCHING.WEIGHTS.FUZZY) +
+        attribute_score +
+        purpose_score +
+        date_score
+    );
 
     return {
         category_score,
         location_score,
-        tfidf_score,
-        fuzzy_score,
+        tfidf_score: Math.round(tfidf_score * MATCHING.WEIGHTS.TFIDF),
+        fuzzy_score: Math.round(fuzzy_score * MATCHING.WEIGHTS.FUZZY),
         attribute_score,
+        purpose_score,
         date_score,
         total_score,
     };
