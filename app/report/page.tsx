@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import Input from '@/components/ui/Input';
@@ -18,7 +18,7 @@ import { getUserProfile } from '@/services/supabase/auth.service';
 import { createLostItem, createFoundItem } from '@/services/supabase/items.service';
 import { uploadItemImage } from '@/services/supabase/storage.service';
 
-export default function ReportPage() {
+function ReportPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const role = searchParams.get('role'); // 'finder' or 'owner'
@@ -142,7 +142,7 @@ export default function ReportPage() {
             let imageUrl: string | undefined;
             if (selectedImage) {
                 try {
-                    const tempId = `temp-${Date.now()}`;
+                    const tempId = `temp - ${Date.now()} `;
                     imageUrl = await uploadItemImage(selectedImage, user.id, tempId);
                 } catch (uploadError) {
                     console.error('Image upload error:', uploadError);
@@ -185,7 +185,7 @@ export default function ReportPage() {
                         console.log(`Found ${matchCount} matches for lost item`);
 
                         if (matchCount > 0) {
-                            alert(`✅ Report submitted!\n\n🎯 Found ${matchCount} potential match${matchCount > 1 ? 'es' : ''}!\n\nCheck "My Reports" to review matches.`);
+                            alert(`✅ Report submitted!\n\n🎯 Found ${matchCount} potential match${matchCount > 1 ? 'es' : ''} !\n\nCheck "My Reports" to review matches.`);
                         } else {
                             alert('✅ Report submitted successfully!\n\nWe\'ll notify you if we find any matches.');
                         }
@@ -212,7 +212,7 @@ export default function ReportPage() {
                         console.log(`Found ${matchCount} matches for found item`);
 
                         if (matchCount > 0) {
-                            alert(`✅ Report submitted!\n\n🎯 Found ${matchCount} potential match${matchCount > 1 ? 'es' : ''}!\n\nCheck "My Reports" to review matches.`);
+                            alert(`✅ Report submitted!\n\n🎯 Found ${matchCount} potential match${matchCount > 1 ? 'es' : ''} !\n\nCheck "My Reports" to review matches.`);
                         } else {
                             alert('✅ Report submitted successfully!\n\nWe\'ll notify you if we find any matches.');
                         }
@@ -393,5 +393,13 @@ export default function ReportPage() {
                 </div>
             </div>
         </Layout>
+    );
+}
+
+export default function ReportPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ReportPageContent />
+        </Suspense>
     );
 }
