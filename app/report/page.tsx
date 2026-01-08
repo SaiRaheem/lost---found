@@ -35,6 +35,7 @@ function ReportPageContent() {
         item_name: '',
         item_category: '',
         description: '',
+        purpose: '',
         location: '',
         area: '',
         datetime: '',

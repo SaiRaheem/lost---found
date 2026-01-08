@@ -344,6 +344,7 @@ export default function AdminPage() {
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Category</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Location</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Owner</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Contact</th>
@@ -368,6 +369,9 @@ export default function AdminPage() {
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.item_category}</td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.description}>
                                                         {item.description || 'N/A'}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.purpose}>
+                                                        {item.purpose || 'N/A'}
                                                     </td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.location}</td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.owner_name}</td>
@@ -406,6 +410,7 @@ export default function AdminPage() {
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Category</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Location</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Finder</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Contact</th>
@@ -430,6 +435,9 @@ export default function AdminPage() {
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.item_category}</td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.description}>
                                                         {item.description || 'N/A'}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={item.purpose}>
+                                                        {item.purpose || 'N/A'}
                                                     </td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.location}</td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.finder_name}</td>
