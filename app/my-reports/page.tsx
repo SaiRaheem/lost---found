@@ -42,32 +42,19 @@ export default function MyReportsPage() {
                 };
 
                 // Convert to ReportItem format with unread notification counts
-                const lostReportsPromises = lostItems.map(async item => ({
-                    id: item.id,
-                    item_name: item.item_name,
-                    item_category: item.item_category,
-                    status: item.status,
-                    created_at: item.created_at,
+                const lostReports = lostItems.map((item) => ({
+                    ...item,
                     role: 'owner' as const,
                     type: 'lost' as const,
-                    unreadCount: await getNotificationCount(item.id, 'lost'),
+                    unreadCount: 0,
                 }));
 
-                const foundReportsPromises = foundItems.map(async item => ({
-                    id: item.id,
-                    item_name: item.item_name,
-                    item_category: item.item_category,
-                    status: item.status,
-                    created_at: item.created_at,
+                const foundReports = foundItems.map((item) => ({
+                    ...item,
                     role: 'finder' as const,
                     type: 'found' as const,
-                    unreadCount: await getNotificationCount(item.id, 'found'),
+                    unreadCount: 0,
                 }));
-
-                const [lostReports, foundReports] = await Promise.all([
-                    Promise.all(lostReportsPromises),
-                    Promise.all(foundReportsPromises),
-                ]);
 
                 // Combine and sort by date (newest first)
                 const allReports = [...lostReports, ...foundReports].sort(
