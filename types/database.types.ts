@@ -22,7 +22,7 @@ export interface LostItem {
     purpose?: string;
     location: string;
     community: string;
-    area?: string;
+    area: string;
     gps_latitude?: number;
     gps_longitude?: number;
     datetime_lost: string;
@@ -31,6 +31,9 @@ export interface LostItem {
     owner_contact: string;
     status: 'active' | 'matched' | 'returned';
     image_url?: string;
+    image_embedding?: number[]; // MobileNet feature vector
+    community_type: string;
+    college: string;
     created_at: string;
     updated_at?: string;
 }
@@ -44,7 +47,7 @@ export interface FoundItem {
     purpose?: string;
     location: string;
     community: string;
-    area?: string;
+    area: string;
     gps_latitude?: number;
     gps_longitude?: number;
     datetime_found: string;
@@ -53,6 +56,9 @@ export interface FoundItem {
     finder_contact: string;
     status: 'active' | 'matched' | 'returned';
     image_url?: string;
+    image_embedding?: number[]; // MobileNet feature vector
+    community_type: string;
+    college: string;
     created_at: string;
     updated_at?: string;
 }
@@ -77,6 +83,7 @@ export interface MatchBreakdown {
     fuzzy_score: number;
     attribute_score: number;
     purpose_score: number;
+    image_score: number;
     date_score: number;
     total_score: number;
 }

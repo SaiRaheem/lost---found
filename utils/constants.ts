@@ -121,13 +121,14 @@ export const MATCHING = {
     MIN_SCORE: 65, // Increased threshold - more strict matching
     MIN_NAME_SIMILARITY: 4, // Stricter name matching
     WEIGHTS: {
-        CATEGORY: 12, // Reduced to make room for purpose
-        LOCATION: 25, // Location is very important
-        TFIDF: 28, // Description similarity is most important
-        FUZZY: 18, // Item name similarity is critical
-        PURPOSE: 10, // NEW - What the item is used for
-        ATTRIBUTES: 5, // Reduced slightly
-        DATE: 2, // Minimal - many items reported same day
+        LOCATION: 25, // Location is very important (unchanged)
+        TFIDF: 25, // Description similarity (reduced from 28)
+        FUZZY: 15, // Item name similarity (reduced from 18)
+        IMAGE: 15, // NEW - Visual similarity from AI
+        CATEGORY: 10, // Reduced from 12
+        PURPOSE: 8, // Reduced from 10
+        ATTRIBUTES: 4, // Reduced from 5
+        DATE: 2, // Minimal - many items reported same day (unchanged)
     },
 } as const;
 

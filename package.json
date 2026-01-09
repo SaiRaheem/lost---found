@@ -12,6 +12,8 @@
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.39.0",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
     "date-fns": "^3.0.0",
     "natural": "^7.0.7",
     "next": "^15.1.3",

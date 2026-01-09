@@ -4,6 +4,7 @@ import { calculateDateProximity } from '@/utils/date-utils';
 import { calculateTFIDFSimilarity } from './tfidf';
 import { fuzzyMatch } from './fuzzy';
 import { extractBrands, extractColors, extractModels } from './nlp-utils';
+import { calculateCosineSimilarity } from './image-matching.service';
 
 /**
  * Calculate category match score (0-25 points)
@@ -141,6 +142,36 @@ function calculatePurposeScore(lostItem: LostItem, foundItem: FoundItem): number
 }
 
 /**
+ * Calculate image similarity score (0-15 points)
+ * Uses cosine similarity of image embeddings from MobileNet
+ */
+function calculateImageScore(lostItem: LostItem, foundItem: FoundItem): number {
+    // If either item doesn't have an image embedding, return 0
+    if (!lostItem.image_embedding || !foundItem.image_embedding) {
+        return 0;
+    }
+
+    // Both must have valid embeddings
+    if (lostItem.image_embedding.length === 0 || foundItem.image_embedding.length === 0) {
+        return 0;
+    }
+
+    try {
+        // Calculate cosine similarity (0-1)
+        const similarity = calculateCosineSimilarity(
+            lostItem.image_embedding,
+            foundItem.image_embedding
+        );
+
+        // Convert to score (0-15 points)
+        return Math.round(similarity * MATCHING.WEIGHTS.IMAGE);
+    } catch (error) {
+        console.error('Error calculating image similarity:', error);
+        return 0;
+    }
+}
+
+/**
  * Calculate overall match score
  */
 export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): MatchBreakdown {
@@ -158,6 +189,8 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
 
     const purpose_score = calculatePurposeScore(lostItem, foundItem);
 
+    const image_score = calculateImageScore(lostItem, foundItem);
+
     const dateProximity = calculateDateProximity(
         lostItem.datetime_lost,
         foundItem.datetime_found
@@ -168,15 +201,16 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
     const weighted_tfidf = Math.round(tfidf_score * MATCHING.WEIGHTS.TFIDF);
     const weighted_fuzzy = Math.round(fuzzy_score * MATCHING.WEIGHTS.FUZZY);
 
-    const total_score = Math.round(
+    const total_score = Math.min(100, Math.round(
         category_score +
         location_score +
         weighted_tfidf +
         weighted_fuzzy +
         attribute_score +
         purpose_score +
+        image_score +
         date_score
-    );
+    ));
 
     // Cap total score at 100
     const capped_total = Math.min(total_score, 100);
@@ -188,6 +222,7 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
         fuzzy_score: weighted_fuzzy,
         attribute_score,
         purpose_score,
+        image_score,
         date_score,
         total_score: capped_total,
     };

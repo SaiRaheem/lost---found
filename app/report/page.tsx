@@ -1,22 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
-import Button from '@/components/ui/Button';
-import LocationPicker from '@/components/ui/LocationPicker';
 import ImageUpload from '@/components/ui/ImageUpload';
+import LocationPicker from '@/components/ui/LocationPicker';
 import { ITEM_CATEGORIES } from '@/utils/constants';
 import { toProperCase, trimExtraSpaces } from '@/utils/formatting';
 import { isRequired, minLength, isNotFutureDate } from '@/utils/validation';
 import { getMaxDateTime, formatForDatabase } from '@/utils/date-utils';
 import { getCurrentUser } from '@/services/supabase/client';
-import { getUserProfile } from '@/services/supabase/auth.service';
+import { getUserProfile } from '@/services/supabase/profile.service';
 import { createLostItem, createFoundItem } from '@/services/supabase/items.service';
 import { uploadItemImage } from '@/services/supabase/storage.service';
+import { extractImageEmbedding, loadImageModel } from '@/services/ai/image-matching.service';
 
 function ReportPageContent() {
     const router = useRouter();
@@ -49,6 +48,8 @@ function ReportPageContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [imageEmbedding, setImageEmbedding] = useState<number[] | null>(null);
+    const [isExtractingEmbedding, setIsExtractingEmbedding] = useState(false);
 
     // Load user profile
     useEffect(() => {
@@ -141,10 +142,20 @@ function ReportPageContent() {
 
             // Upload image if selected
             let imageUrl: string | undefined;
+            let embedding: number[] | undefined;
+
             if (selectedImage) {
                 try {
                     const tempId = `temp - ${Date.now()} `;
                     imageUrl = await uploadItemImage(selectedImage, user.id, tempId);
+
+                    // Use pre-extracted embedding or extract now
+                    if (imageEmbedding) {
+                        embedding = imageEmbedding;
+                    } else {
+                        console.log('Extracting image embedding...');
+                        embedding = await extractImageEmbedding(selectedImage);
+                    }
                 } catch (uploadError) {
                     console.error('Image upload error:', uploadError);
                     alert('Failed to upload image. Proceeding without image.');
@@ -157,12 +168,16 @@ function ReportPageContent() {
                 item_name: toProperCase(trimExtraSpaces(formData.item_name)),
                 item_category: formData.item_category,
                 description: trimExtraSpaces(formData.description),
+                purpose: formData.purpose ? trimExtraSpaces(formData.purpose) : undefined,
                 location: toProperCase(trimExtraSpaces(formData.location)),
                 area: formData.area ? toProperCase(trimExtraSpaces(formData.area)) : undefined,
                 community: formData.community_type === 'college' ? formData.college : 'Common Area',
+                community_type: formData.community_type,
+                college: formData.college,
                 gps_latitude: formData.gps_latitude,
                 gps_longitude: formData.gps_longitude,
                 image_url: imageUrl,
+                image_embedding: embedding,
                 status: 'active' as const,
             };
 
