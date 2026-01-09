@@ -164,25 +164,32 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
     );
     const date_score = Math.round((dateProximity / 10) * MATCHING.WEIGHTS.DATE);
 
+    // Calculate weighted scores
+    const weighted_tfidf = Math.round(tfidf_score * MATCHING.WEIGHTS.TFIDF);
+    const weighted_fuzzy = Math.round(fuzzy_score * MATCHING.WEIGHTS.FUZZY);
+
     const total_score = Math.round(
         category_score +
         location_score +
-        (tfidf_score * MATCHING.WEIGHTS.TFIDF) +
-        (fuzzy_score * MATCHING.WEIGHTS.FUZZY) +
+        weighted_tfidf +
+        weighted_fuzzy +
         attribute_score +
         purpose_score +
         date_score
     );
 
+    // Cap total score at 100
+    const capped_total = Math.min(total_score, 100);
+
     return {
         category_score,
         location_score,
-        tfidf_score: Math.round(tfidf_score * MATCHING.WEIGHTS.TFIDF),
-        fuzzy_score: Math.round(fuzzy_score * MATCHING.WEIGHTS.FUZZY),
+        tfidf_score: weighted_tfidf,
+        fuzzy_score: weighted_fuzzy,
         attribute_score,
         purpose_score,
         date_score,
-        total_score,
+        total_score: capped_total,
     };
 }
 
