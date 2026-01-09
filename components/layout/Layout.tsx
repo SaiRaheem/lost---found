@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Header from './Header';
+import BottomNav from './BottomNav';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -17,9 +18,10 @@ const Layout: React.FC<LayoutProps> = ({
     return (
         <div className="min-h-screen bg-gradient-to-br from-light-bg via-white to-light-bg dark:from-dark-bg dark:via-gray-900 dark:to-dark-bg">
             {showHeader && <Header showNotifications={showNotifications} />}
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto px-4 py-8 pb-20 md:pb-8">
                 {children}
             </main>
+            <BottomNav />
         </div>
     );
 };
