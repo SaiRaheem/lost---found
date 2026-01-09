@@ -43,11 +43,11 @@ export function calculateSimilarity(str1: string, str2: string): number {
 
 /**
  * Fuzzy match with typo tolerance
- * Returns score out of 10
+ * Returns score 0-15 points (matching FUZZY weight)
  */
 export function fuzzyMatch(str1: string, str2: string): number {
     const similarity = calculateSimilarity(str1, str2);
-    return Math.round(similarity * 10);
+    return Math.min(15, Math.round(similarity * 15));
 }
 
 /**

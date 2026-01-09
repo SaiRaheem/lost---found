@@ -230,44 +230,46 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="glass-card p-2 flex gap-2">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'overview'
-                            ? 'bg-primary text-white shadow-glow'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                            }`}
-                    >
-                        Overview
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('lost')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'lost'
-                            ? 'bg-primary text-white shadow-glow'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                            }`}
-                    >
-                        Lost Items
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('found')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'found'
-                            ? 'bg-primary text-white shadow-glow'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                            }`}
-                    >
-                        Found Items
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('matches')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${activeTab === 'matches'
-                            ? 'bg-primary text-white shadow-glow'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                            }`}
-                    >
-                        Matches
-                    </button>
+                {/* Tabs - Mobile Responsive */}
+                <div className="glass-card p-2">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`flex-shrink-0 py-2 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${activeTab === 'overview'
+                                ? 'bg-primary text-white shadow-glow'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                                }`}
+                        >
+                            📊 Overview
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('lost')}
+                            className={`flex-shrink-0 py-2 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${activeTab === 'lost'
+                                ? 'bg-primary text-white shadow-glow'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                                }`}
+                        >
+                            🔍 Lost Items
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('found')}
+                            className={`flex-shrink-0 py-2 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${activeTab === 'found'
+                                ? 'bg-primary text-white shadow-glow'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                                }`}
+                        >
+                            ✅ Found Items
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('matches')}
+                            className={`flex-shrink-0 py-2 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${activeTab === 'matches'
+                                ? 'bg-primary text-white shadow-glow'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                                }`}
+                        >
+                            ⚡ Matches
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -334,14 +336,14 @@ export default function AdminPage() {
                     )}
 
                     {activeTab === 'lost' && (
-                        <div className="space-y-4">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Lost Items</h2>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <div className="glass-card p-6">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Lost Items</h2>
+                            <div className="overflow-x-auto -mx-6 px-6">
+                                <table className="w-full min-w-[800px]">
+                                    <thead className="border-b border-gray-200 dark:border-gray-700">
+                                        <tr>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Image</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Name</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Category</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Description</th>
                                             <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</th>

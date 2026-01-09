@@ -1,7 +1,24 @@
 import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-backend-cpu';
+import '@tensorflow/tfjs-backend-webgl';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 
 let model: mobilenet.MobileNet | null = null;
+
+/**
+ * Initialize TensorFlow.js backends
+ */
+async function initializeTensorFlow(): Promise<void> {
+    try {
+        // Set backend preference (WebGL is faster, CPU is fallback)
+        await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'));
+        await tf.ready();
+        console.log('TensorFlow.js backend initialized:', tf.getBackend());
+    } catch (error) {
+        console.error('Error initializing TensorFlow backend:', error);
+        throw error;
+    }
+}
 
 /**
  * Load MobileNet model (call once on app initialization)
@@ -10,6 +27,9 @@ export async function loadImageModel(): Promise<void> {
     if (model) return; // Already loaded
 
     try {
+        console.log('Initializing TensorFlow.js...');
+        await initializeTensorFlow();
+
         console.log('Loading MobileNet model...');
         model = await mobilenet.load();
         console.log('MobileNet model loaded successfully');
@@ -42,14 +62,24 @@ export async function extractImageEmbedding(
             img = imageElement;
         }
 
-        // Get activation from second-to-last layer (embeddings)
-        const activation = model!.infer(img, true) as tf.Tensor;
+        // Use tf.tidy to automatically clean up intermediate tensors
+        const embeddingArray = await tf.tidy(() => {
+            // Get activation from second-to-last layer (embeddings)
+            const activation = model!.infer(img, true) as tf.Tensor;
 
-        // Convert to array
-        const embeddingArray = await activation.data();
+            // Return the tensor (will be kept, others disposed)
+            return activation;
+        }).data();
 
-        // Clean up tensor
-        activation.dispose();
+        // Log memory usage for debugging
+        const memInfo = tf.memory();
+        if (memInfo.numBytes > 100 * 1024 * 1024) { // > 100MB
+            console.warn('High memory usage in GPU:', (memInfo.numBytes / (1024 * 1024)).toFixed(2), 'MB');
+            // Force garbage collection if available
+            if (typeof tf.engine().startScope === 'function') {
+                tf.disposeVariables();
+            }
+        }
 
         return Array.from(embeddingArray);
     } catch (error) {

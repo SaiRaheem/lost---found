@@ -60,7 +60,7 @@ function cosineSimilarity(vec1: number[], vec2: number[]): number {
 
 /**
  * Calculate TF-IDF similarity between two texts
- * Returns score out of 25 (as per matching requirements)
+ * Returns score 0-25 points (matching TFIDF weight)
  */
 export function calculateTFIDFSimilarity(text1: string, text2: string): number {
     // Expand with synonyms for better matching
@@ -79,11 +79,11 @@ export function calculateTFIDFSimilarity(text1: string, text2: string): number {
     const vec1 = calculateTFIDF(doc1, allDocs, vocabulary);
     const vec2 = calculateTFIDF(doc2, allDocs, vocabulary);
 
-    // Calculate cosine similarity
+    // Calculate cosine similarity (0-1)
     const similarity = cosineSimilarity(vec1, vec2);
 
-    // Convert to score out of 25
-    return Math.round(similarity * 25);
+    // Convert to score 0-25 points
+    return Math.min(25, Math.round(similarity * 25));
 }
 
 /**

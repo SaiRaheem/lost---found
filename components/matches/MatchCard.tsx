@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MatchWithItems } from '@/types/database.types';
 import { formatForDisplay } from '@/utils/date-utils';
+import ScoreBreakdown from './ScoreBreakdown';
 
 interface MatchCardProps {
     match: MatchWithItems;
@@ -10,6 +11,7 @@ interface MatchCardProps {
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReject }) => {
+    const [showBreakdown, setShowBreakdown] = useState(false);
     const otherItem = userRole === 'owner' ? match.found_item : match.lost_item;
     const userAccepted = userRole === 'owner' ? match.owner_accepted : match.finder_accepted;
     const otherAccepted = userRole === 'owner' ? match.finder_accepted : match.owner_accepted;
@@ -41,8 +43,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
             {/* Side-by-side Image Comparison */}
             {(match.lost_item?.image_url || match.found_item?.image_url) && (
                 <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                         📸 Visual Comparison
+                        {match.breakdown.image_score > 0 && (
+                            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full">
+                                AI Matched
+                            </span>
+                        )}
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                         {/* Lost Item Image */}
@@ -53,16 +60,15 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                             {match.lost_item?.image_url ? (
                                 <img
                                     src={match.lost_item.image_url}
-                                    alt={match.lost_item.item_name}
-                                    className="w-full h-48 object-cover rounded-lg border-2 border-red-200 dark:border-red-800"
+                                    alt="Lost item"
+                                    className="w-full h-48 object-cover rounded-lg border-2 border-red-500/50"
                                 />
                             ) : (
-                                <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                                    <p className="text-sm text-gray-400">No image</p>
+                                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                    <span className="text-gray-400">No image</span>
                                 </div>
                             )}
                         </div>
-
                         {/* Found Item Image */}
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
@@ -71,33 +77,33 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                             {match.found_item?.image_url ? (
                                 <img
                                     src={match.found_item.image_url}
-                                    alt={match.found_item.item_name}
-                                    className="w-full h-48 object-cover rounded-lg border-2 border-green-200 dark:border-green-800"
+                                    alt="Found item"
+                                    className="w-full h-48 object-cover rounded-lg border-2 border-green-500/50"
                                 />
                             ) : (
-                                <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                                    <p className="text-sm text-gray-400">No image</p>
+                                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                    <span className="text-gray-400">No image</span>
                                 </div>
                             )}
                         </div>
                     </div>
+                    {match.breakdown.image_score > 0 && (
+                        <div className="mt-2 text-center">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                                AI Image Similarity: <span className="font-bold text-purple-600 dark:text-purple-400">
+                                    {match.breakdown.image_score}/15 points
+                                </span>
+                            </span>
+                        </div>
+                    )}
                 </div>
             )}
 
+            {/* Item Details */}
             <div className="space-y-2 text-sm">
                 <div>
                     <span className="font-medium text-gray-700 dark:text-gray-300">Category:</span>{' '}
                     <span className="text-gray-600 dark:text-gray-400">{otherItem.item_category}</span>
-                </div>
-                <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Location:</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400">{otherItem.location}</span>
-                </div>
-                <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Date:</span>{' '}
-                    <span className="text-gray-600 dark:text-gray-400">
-                        {formatForDisplay('datetime_found' in otherItem ? otherItem.datetime_found : otherItem.datetime_lost, true)}
-                    </span>
                 </div>
                 <div>
                     <span className="font-medium text-gray-700 dark:text-gray-300">Description:</span>{' '}
@@ -105,38 +111,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                 </div>
             </div>
 
-            {/* Match Breakdown */}
-            <details className="text-sm">
-                <summary className="cursor-pointer font-medium text-gray-700 dark:text-gray-300 hover:text-primary">
-                    View Match Details
-                </summary>
-                <div className="mt-3 space-y-2 pl-4">
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Category Match:</span>
-                        <span className="font-medium">{match.breakdown.category_score}/20</span>
+            {/* Match Breakdown - New Component */}
+            <div>
+                <button
+                    onClick={() => setShowBreakdown(!showBreakdown)}
+                    className="w-full flex items-center justify-between px-4 py-2 glass-card rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                        {showBreakdown ? '▼' : '▶'} View Detailed Score Breakdown
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {showBreakdown ? 'Hide' : 'Show'} weightage
+                    </span>
+                </button>
+                {showBreakdown && (
+                    <div className="mt-4">
+                        <ScoreBreakdown breakdown={match.breakdown} showDetails={true} />
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Location Match:</span>
-                        <span className="font-medium">{match.breakdown.location_score}/20</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Description Similarity:</span>
-                        <span className="font-medium">{match.breakdown.tfidf_score}/25</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Name Similarity:</span>
-                        <span className="font-medium">{match.breakdown.fuzzy_score}/10</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Attributes:</span>
-                        <span className="font-medium">{match.breakdown.attribute_score}/15</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Date Proximity:</span>
-                        <span className="font-medium">{match.breakdown.date_score}/10</span>
-                    </div>
-                </div>
-            </details>
+                )}
+            </div>
 
             {/* Acceptance Status */}
             <div className="pt-4 border-t border-gray-200/20 dark:border-gray-700/20">
@@ -153,13 +146,13 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                     <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">Your status:</span>
-                            <span className={`font-medium ${userAccepted ? 'text-green-600' : 'text-gray-500'}`}>
+                            <span className={`font - medium ${userAccepted ? 'text-green-600' : 'text-gray-500'} `}>
                                 {userAccepted ? '✓ Accepted' : 'Pending'}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">Other party:</span>
-                            <span className={`font-medium ${otherAccepted ? 'text-green-600' : 'text-gray-500'}`}>
+                            <span className={`font - medium ${otherAccepted ? 'text-green-600' : 'text-gray-500'} `}>
                                 {otherAccepted ? '✓ Accepted' : 'Pending'}
                             </span>
                         </div>

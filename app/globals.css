@@ -155,7 +155,32 @@
   }
 
   .animate-pulse-slow {
-    animation: pulseSlow 2s ease-in-out infinite;
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+
+  /* Loading bar animation for page transitions */
+  @keyframes loading-bar {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-loading-bar {
+    animation: loading-bar 1.5s ease-in-out infinite;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

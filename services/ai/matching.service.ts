@@ -178,11 +178,13 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
     const category_score = calculateCategoryScore(lostItem, foundItem);
     const location_score = calculateLocationScore(lostItem, foundItem);
 
+    // TF-IDF already returns 0-25 (weighted)
     const tfidf_score = calculateTFIDFSimilarity(
         lostItem.description,
         foundItem.description
     );
 
+    // Fuzzy already returns 0-10 (weighted)  
     const fuzzy_score = fuzzyMatch(lostItem.item_name, foundItem.item_name);
 
     const attribute_score = calculateAttributeScore(lostItem, foundItem);
@@ -197,34 +199,28 @@ export function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): M
     );
     const date_score = Math.round((dateProximity / 10) * MATCHING.WEIGHTS.DATE);
 
-    // Calculate weighted scores
-    const weighted_tfidf = Math.round(tfidf_score * MATCHING.WEIGHTS.TFIDF);
-    const weighted_fuzzy = Math.round(fuzzy_score * MATCHING.WEIGHTS.FUZZY);
-
+    // Calculate total (scores are already weighted, no need to multiply again)
     const total_score = Math.min(100, Math.round(
         category_score +
         location_score +
-        weighted_tfidf +
-        weighted_fuzzy +
+        tfidf_score +
+        fuzzy_score +
         attribute_score +
         purpose_score +
         image_score +
         date_score
     ));
 
-    // Cap total score at 100
-    const capped_total = Math.min(total_score, 100);
-
     return {
         category_score,
         location_score,
-        tfidf_score: weighted_tfidf,
-        fuzzy_score: weighted_fuzzy,
+        tfidf_score,
+        fuzzy_score,
         attribute_score,
         purpose_score,
         image_score,
         date_score,
-        total_score: capped_total,
+        total_score,
     };
 }
 
