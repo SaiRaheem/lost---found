@@ -110,9 +110,9 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
                                 My Reports
                             </button>
                         </Link>
-                        <Link href="/profile">
+                        <Link href="/settings">
                             <button className="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium">
-                                Profile
+                                Settings
                             </button>
                         </Link>
                         <Link href="/rewards">

@@ -95,35 +95,35 @@ export default function SettingsPage() {
 
     return (
         <Layout showHeader showNotifications>
-            <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+            <div className="max-w-4xl mx-auto py-4 sm:py-8 px-4 space-y-4 sm:space-y-6 pb-20 md:pb-8">
                 {/* Header */}
                 <div>
-                    <h1 className="text-3xl font-bold text-gradient mb-2">Settings</h1>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">Settings</h1>
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                         Manage your account settings and preferences
                     </p>
                 </div>
 
                 {/* Account Information */}
-                <div className="glass-card p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                <div className="glass-card p-4 sm:p-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">
                         Account Information
                     </h2>
                     <div className="space-y-3">
                         <div>
                             <label className="text-sm text-gray-600 dark:text-gray-400">Email</label>
-                            <p className="text-gray-900 dark:text-white font-medium">{user?.email}</p>
+                            <p className="text-gray-900 dark:text-white font-medium break-all">{user?.email}</p>
                         </div>
                         <div>
                             <label className="text-sm text-gray-600 dark:text-gray-400">User ID</label>
-                            <p className="text-gray-900 dark:text-white font-mono text-sm">{user?.id}</p>
+                            <p className="text-gray-900 dark:text-white font-mono text-xs sm:text-sm break-all">{user?.id}</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Change Password */}
-                <div className="glass-card p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                <div className="glass-card p-4 sm:p-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">
                         Change Password
                     </h2>
 
