@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import UserMenu from '@/components/ui/UserMenu';
 import { signOut } from '@/services/supabase/auth.service';
 import { getUnreadNotifications, subscribeToNotifications, markAsRead, type Notification } from '@/services/supabase/notifications.service';
 import { getCurrentUser, supabase } from '@/services/supabase/client';
@@ -19,6 +20,7 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
+    const [userEmail, setUserEmail] = useState<string>('');
 
     // Fetch unread notification count
     useEffect(() => {
@@ -36,6 +38,9 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
         const setupSubscription = async () => {
             const user = await getCurrentUser();
             if (!user) return;
+
+            // Set user email
+            setUserEmail(user.email || '');
 
             const channel = subscribeToNotifications(user.id, () => {
                 // Refresh count when new notification arrives
@@ -110,11 +115,6 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
                                 My Reports
                             </button>
                         </Link>
-                        <Link href="/settings">
-                            <button className="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium">
-                                Settings
-                            </button>
-                        </Link>
                         <Link href="/rewards">
                             <button className="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium">
                                 Rewards
@@ -139,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
                                     </svg>
                                     {/* Unread count badge */}
                                     {unreadCount > 0 && (
-                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                                             {unreadCount > 9 ? '9+' : unreadCount}
                                         </span>
                                     )}
@@ -155,6 +155,9 @@ const Header: React.FC<HeaderProps> = ({ showNotifications = false, showLogo = t
                                 )}
                             </div>
                         )}
+
+                        {/* User Menu */}
+                        <UserMenu userEmail={userEmail} />
                     </div>
                 </div>
             </div>
