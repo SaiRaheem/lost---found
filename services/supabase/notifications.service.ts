@@ -14,6 +14,8 @@ export interface Notification {
     item_name?: string;
     item_category?: string;
     location?: string;
+    // Other user's name for personalized messages
+    other_user_name?: string;
 }
 
 /**
@@ -36,7 +38,7 @@ export async function getUnreadCountForItem(itemId: string, itemType: 'lost' | '
 }
 
 /**
- * Get all unread notifications for current user with item details
+ * Get all unread notifications for current user with item details and other user's name
  */
 export async function getUnreadNotifications(): Promise<Notification[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -54,21 +56,56 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
         return [];
     }
 
-    // Fetch item details for each notification
+    // Fetch item details and other user's name for each notification
     const notificationsWithDetails = await Promise.all(
         (data || []).map(async (notif) => {
             const table = notif.item_type === 'lost' ? 'lost_items' : 'found_items';
+            const userField = notif.item_type === 'lost' ? 'owner_name' : 'finder_name';
+
+            // Fetch item details
             const { data: itemData } = await supabase
                 .from(table)
-                .select('item_name, item_category, location')
+                .select(`item_name, item_category, location, user_id`)
                 .eq('id', notif.item_id)
                 .single();
+
+            // Fetch other user's name from related_id (match or message)
+            let otherUserName = null;
+            if (notif.related_id) {
+                // Try to get from matches table
+                const { data: matchData } = await supabase
+                    .from('matches')
+                    .select('lost_items(owner_name), found_items(finder_name)')
+                    .eq('id', notif.related_id)
+                    .single();
+
+                if (matchData) {
+                    // Get the name of the OTHER user (not the current user)
+                    const lostName = (matchData.lost_items as any)?.owner_name;
+                    const foundName = (matchData.found_items as any)?.finder_name;
+
+                    // If current item is lost, get finder name; if found, get owner name
+                    otherUserName = notif.item_type === 'lost' ? foundName : lostName;
+                }
+            }
+
+            // If still no name, try to get from the item's user
+            if (!otherUserName && itemData?.user_id && itemData.user_id !== user.id) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('name')
+                    .eq('id', itemData.user_id)
+                    .single();
+
+                otherUserName = userData?.name;
+            }
 
             return {
                 ...notif,
                 item_name: itemData?.item_name,
                 item_category: itemData?.item_category,
                 location: itemData?.location,
+                other_user_name: otherUserName,
             } as Notification;
         })
     );

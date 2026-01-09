@@ -74,14 +74,15 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         const itemName = notification.item_name || 'Item';
         const category = notification.item_category || '';
         const location = notification.location || '';
+        const userName = notification.other_user_name || 'Someone';
 
         switch (notification.notification_type) {
             case 'new_match':
                 return `${itemName}${category ? ` (${category})` : ''} found at ${location}`;
             case 'match_accepted':
-                return `Someone accepted your match for ${itemName}${location ? ` at ${location}` : ''}`;
+                return `${userName} accepted your match for ${itemName}${location ? ` at ${location}` : ''}`;
             case 'new_message':
-                return `New message about ${itemName}`;
+                return `Message from ${userName} about ${itemName}`;
             default:
                 return notification.message;
         }
@@ -95,8 +96,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 onClick={onClose}
             />
 
-            {/* Dropdown */}
-            <div className="absolute right-0 top-full mt-2 w-full sm:w-96 max-w-[calc(100vw-2rem)] max-h-[80vh] sm:max-h-[32rem] overflow-y-auto glass-card rounded-2xl shadow-2xl z-50 animate-slide-down">
+            {/* Dropdown - Fixed positioning for mobile */}
+            <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-full mt-2 w-auto sm:w-96 max-h-[80vh] sm:max-h-[32rem] overflow-y-auto glass-card rounded-2xl shadow-2xl z-50 animate-slide-down">
                 {/* Header */}
                 <div className="sticky top-0 glass-card border-b border-gray-200/20 dark:border-gray-700/20 p-4 rounded-t-2xl backdrop-blur-xl">
                     <div className="flex items-center justify-between">
