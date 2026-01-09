@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Notification } from '@/services/supabase/notifications.service';
 import { formatForDisplay, getRelativeTime } from '@/utils/date-utils';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,20 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     onNotificationClick
 }) => {
     const router = useRouter();
+
+    // Lock body scroll when notification dropdown is open
+    useEffect(() => {
+        // Save original overflow
+        const originalOverflow = document.body.style.overflow;
+
+        // Lock scroll
+        document.body.style.overflow = 'hidden';
+
+        // Restore on cleanup
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, []);
 
     const getNotificationIcon = (type: string) => {
         switch (type) {
@@ -90,9 +104,9 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
     return (
         <>
-            {/* Backdrop */}
+            {/* Backdrop with stronger blur */}
             <div
-                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm animate-fade-in"
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md animate-fade-in"
                 onClick={onClose}
             />
 
