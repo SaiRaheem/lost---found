@@ -126,18 +126,18 @@ export async function upsertUserProfile(profileData: ProfileData) {
 }
 
 /**
- * Reset password (send reset email)
+ * Send password reset email
  */
 export async function sendPasswordResetEmail(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) throw error;
 }
 
 /**
- * Update password
+ * Update password (for reset password flow)
  */
 export async function updatePassword(newPassword: string) {
     const { error } = await supabase.auth.updateUser({
@@ -145,4 +145,70 @@ export async function updatePassword(newPassword: string) {
     });
 
     if (error) throw error;
+}
+
+/**
+ * Change password for logged-in user (verifies current password first)
+ */
+export async function changePassword(currentPassword: string, newPassword: string) {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) throw new Error('No user logged in');
+
+    // Verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+    });
+
+    if (signInError) {
+        throw new Error('Current password is incorrect');
+    }
+
+    // Update to new password
+    const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+    });
+
+    if (error) throw error;
+}
+
+/**
+ * Validate password strength
+ */
+export function validatePassword(password: string): {
+    isValid: boolean;
+    strength: 'weak' | 'medium' | 'strong';
+    errors: string[];
+} {
+    const errors: string[] = [];
+
+    if (password.length < 8) {
+        errors.push('At least 8 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push('One uppercase letter');
+    }
+    if (!/[a-z]/.test(password)) {
+        errors.push('One lowercase letter');
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push('One number');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        errors.push('One special character');
+    }
+
+    let strength: 'weak' | 'medium' | 'strong' = 'weak';
+    if (password.length >= 12 && errors.length === 0) {
+        strength = 'strong';
+    } else if (password.length >= 8 && errors.length <= 2) {
+        strength = 'medium';
+    }
+
+    return {
+        isValid: errors.length === 0,
+        strength,
+        errors,
+    };
 }

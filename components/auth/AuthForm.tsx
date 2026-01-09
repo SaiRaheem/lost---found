@@ -200,15 +200,25 @@ const AuthForm: React.FC = () => {
                         error={error && error.includes('email') ? error : ''}
                     />
 
-                    <Input
-                        label="Password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        error={error && !error.includes('email') ? error : ''}
-                    />
+                    <div>
+                        <Input
+                            label="Password"
+                            type="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            error={error && error.includes('password') ? error : ''}
+                        />
+                        <div className="text-right mt-1">
+                            <a
+                                href="/forgot-password"
+                                className="text-sm text-primary hover:underline"
+                            >
+                                Forgot password?
+                            </a>
+                        </div>
+                    </div>
 
                     <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
                         Sign In
