@@ -170,9 +170,9 @@ function ReportPageContent() {
                 item_name: toProperCase(trimExtraSpaces(formData.item_name)),
                 item_category: formData.item_category,
                 description: trimExtraSpaces(formData.description),
-                purpose: formData.purpose ? trimExtraSpaces(formData.purpose) : undefined,
+                purpose: formData.purpose ? trimExtraSpaces(formData.purpose) : '',
                 location: toProperCase(trimExtraSpaces(formData.location)),
-                area: formData.area ? toProperCase(trimExtraSpaces(formData.area)) : undefined,
+                area: formData.area || '', // Provide empty string if undefined
                 community: formData.community_type === 'college' ? formData.college : 'Common Area',
                 community_type: formData.community_type,
                 college: formData.college,
