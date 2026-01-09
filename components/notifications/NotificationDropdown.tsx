@@ -22,7 +22,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         switch (type) {
             case 'new_match':
                 return (
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse-slow">
                         <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                             <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -31,7 +31,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 );
             case 'match_accepted':
                 return (
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse-slow">
                         <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
@@ -39,7 +39,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 );
             case 'new_message':
                 return (
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center animate-pulse-slow">
                         <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                             <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
@@ -57,18 +57,48 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         }
     };
 
+    const getNotificationTitle = (notification: Notification) => {
+        switch (notification.notification_type) {
+            case 'new_match':
+                return `New Match Found!`;
+            case 'match_accepted':
+                return `Match Accepted!`;
+            case 'new_message':
+                return `New Message`;
+            default:
+                return notification.message;
+        }
+    };
+
+    const getNotificationDetails = (notification: Notification) => {
+        const itemName = notification.item_name || 'Item';
+        const category = notification.item_category || '';
+        const location = notification.location || '';
+
+        switch (notification.notification_type) {
+            case 'new_match':
+                return `${itemName}${category ? ` (${category})` : ''} found at ${location}`;
+            case 'match_accepted':
+                return `Someone accepted your match for ${itemName}${location ? ` at ${location}` : ''}`;
+            case 'new_message':
+                return `New message about ${itemName}`;
+            default:
+                return notification.message;
+        }
+    };
+
     return (
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm animate-fade-in"
                 onClick={onClose}
             />
 
             {/* Dropdown */}
-            <div className="absolute right-0 top-full mt-2 w-96 max-h-[32rem] overflow-y-auto glass-card rounded-2xl shadow-2xl z-50 animate-slide-up">
+            <div className="absolute right-0 top-full mt-2 w-full sm:w-96 max-w-[calc(100vw-2rem)] max-h-[80vh] sm:max-h-[32rem] overflow-y-auto glass-card rounded-2xl shadow-2xl z-50 animate-slide-down">
                 {/* Header */}
-                <div className="sticky top-0 glass-card border-b border-gray-200/20 dark:border-gray-700/20 p-4 rounded-t-2xl">
+                <div className="sticky top-0 glass-card border-b border-gray-200/20 dark:border-gray-700/20 p-4 rounded-t-2xl backdrop-blur-xl">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                             Notifications
@@ -94,24 +124,28 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                             <p className="text-gray-600 dark:text-gray-400">No notifications</p>
                         </div>
                     ) : (
-                        notifications.map((notification) => (
+                        notifications.map((notification, index) => (
                             <button
                                 key={notification.id}
                                 onClick={() => onNotificationClick(notification)}
-                                className="w-full p-4 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors text-left"
+                                className="w-full p-4 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-all duration-200 text-left animate-slide-in"
+                                style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 <div className="flex gap-3">
                                     {getNotificationIcon(notification.notification_type)}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                                            {notification.message}
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                                            {getNotificationTitle(notification)}
+                                        </p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-1 line-clamp-2">
+                                            {getNotificationDetails(notification)}
                                         </p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
                                             {getRelativeTime(notification.created_at)}
                                         </p>
                                     </div>
                                     {!notification.is_read && (
-                                        <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-2" />
+                                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2 animate-pulse" />
                                     )}
                                 </div>
                             </button>
@@ -121,13 +155,13 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
                 {/* Footer */}
                 {notifications.length > 0 && (
-                    <div className="sticky bottom-0 glass-card border-t border-gray-200/20 dark:border-gray-700/20 p-3 rounded-b-2xl">
+                    <div className="sticky bottom-0 glass-card border-t border-gray-200/20 dark:border-gray-700/20 p-3 rounded-b-2xl backdrop-blur-xl">
                         <button
                             onClick={() => {
                                 router.push('/my-reports');
                                 onClose();
                             }}
-                            className="w-full text-center text-sm text-primary hover:text-primary-dark font-medium"
+                            className="w-full text-center text-sm text-primary hover:text-primary-dark font-medium transition-colors"
                         >
                             View All Reports
                         </button>

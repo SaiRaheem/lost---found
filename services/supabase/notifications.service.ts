@@ -10,6 +10,10 @@ export interface Notification {
     message: string;
     is_read: boolean;
     created_at: string;
+    // Item details for richer notifications
+    item_name?: string;
+    item_category?: string;
+    location?: string;
 }
 
 /**
@@ -32,7 +36,7 @@ export async function getUnreadCountForItem(itemId: string, itemType: 'lost' | '
 }
 
 /**
- * Get all unread notifications for current user
+ * Get all unread notifications for current user with item details
  */
 export async function getUnreadNotifications(): Promise<Notification[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +54,26 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
         return [];
     }
 
-    return data || [];
+    // Fetch item details for each notification
+    const notificationsWithDetails = await Promise.all(
+        (data || []).map(async (notif) => {
+            const table = notif.item_type === 'lost' ? 'lost_items' : 'found_items';
+            const { data: itemData } = await supabase
+                .from(table)
+                .select('item_name, item_category, location')
+                .eq('id', notif.item_id)
+                .single();
+
+            return {
+                ...notif,
+                item_name: itemData?.item_name,
+                item_category: itemData?.item_category,
+                location: itemData?.location,
+            } as Notification;
+        })
+    );
+
+    return notificationsWithDetails;
 }
 
 /**
