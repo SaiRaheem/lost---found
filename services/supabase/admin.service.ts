@@ -186,7 +186,7 @@ export async function getUsersWithRewards() {
             throw usersError;
         }
         console.log('✅ Users fetched:', users?.length || 0);
-        console.log('📋 User IDs:', users?.map(u => ({ id: u.id, name: u.name, is_admin: u.is_admin })));
+        console.log('📋 User IDs:', users?.map(u => ({ id: u.id, name: u.name })));
 
         // Get all purchases with user and shop item details
         const { data: purchases, error: purchasesError } = await supabase

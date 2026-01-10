@@ -129,20 +129,24 @@ export default function AdminPage() {
         // Subscribe to purchases changes
         const purchasesChannel = supabase
             .channel('admin-purchases')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, () => {
-                console.log('Purchases changed, refreshing...');
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, (payload) => {
+                console.log('🔔 Purchases changed!', payload);
                 fetchData();
             })
-            .subscribe();
+            .subscribe((status) => {
+                console.log('📡 Purchases subscription status:', status);
+            });
 
         // Subscribe to redemptions changes
         const redemptionsChannel = supabase
             .channel('admin-redemptions')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, () => {
-                console.log('Redemptions changed, refreshing...');
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, (payload) => {
+                console.log('🔔 Redemptions changed!', payload);
                 fetchData();
             })
-            .subscribe();
+            .subscribe((status) => {
+                console.log('📡 Redemptions subscription status:', status);
+            });
 
         return () => {
             supabase.removeChannel(lostChannel);
