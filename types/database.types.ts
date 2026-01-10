@@ -74,6 +74,10 @@ export interface Match {
     status: 'pending' | 'active' | 'success' | 'closed';
     chat_created: boolean;
     created_at: string;
+    // Rewards system properties
+    item_returned_at?: string;
+    reward_issued?: boolean;
+    reward_amount?: number;
 }
 
 export interface MatchBreakdown {

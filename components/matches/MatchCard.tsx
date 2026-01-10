@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MatchWithItems } from '@/types/database.types';
 import { formatForDisplay } from '@/utils/date-utils';
 import ScoreBreakdown from './ScoreBreakdown';
+import { submitHarassmentReport, hasUserReportedMatch } from '@/services/supabase/security.service';
+import { getCurrentUser } from '@/services/supabase/client';
 
 interface MatchCardProps {
     match: MatchWithItems;
@@ -12,10 +14,103 @@ interface MatchCardProps {
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReject }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
+    const [isReporting, setIsReporting] = useState(false);
+    const [hasReported, setHasReported] = useState(false);
+    const [isCheckingReport, setIsCheckingReport] = useState(true);
     const otherItem = userRole === 'owner' ? match.found_item : match.lost_item;
     const userAccepted = userRole === 'owner' ? match.owner_accepted : match.finder_accepted;
     const otherAccepted = userRole === 'owner' ? match.finder_accepted : match.owner_accepted;
     const bothAccepted = userAccepted && otherAccepted;
+
+    const otherUserId = userRole === 'owner' ? match.found_item?.user_id : match.lost_item?.user_id;
+
+    // Check if user has already reported this match
+    useEffect(() => {
+        const checkReportStatus = async () => {
+            try {
+                const user = await getCurrentUser();
+                if (user) {
+                    const alreadyReported = await hasUserReportedMatch(user.id, match.id);
+                    setHasReported(alreadyReported);
+                }
+            } catch (error) {
+                console.error('Error checking report status:', error);
+            } finally {
+                setIsCheckingReport(false);
+            }
+        };
+
+        checkReportStatus();
+    }, [match.id]);
+
+    const finderId = match.found_item?.user_id;
+    const itemReturned = match.item_returned_at != null;
+    const [isMarkingReturned, setIsMarkingReturned] = useState(false);
+
+    const handleMarkAsReturned = async () => {
+        if (!confirm('Mark this item as returned?\n\nThe finder will receive reward points based on the item category and return time.')) {
+            return;
+        }
+
+        setIsMarkingReturned(true);
+        try {
+            if (!finderId || !match.lost_item) return;
+
+            // Issue reward to finder
+            const itemCategory = match.lost_item.item_category || 'Other';
+            const itemLostAt = new Date(match.lost_item.datetime_lost);
+
+            const { issueMatchReward } = await import('@/services/supabase/rewards.service');
+            await issueMatchReward(
+                match.id,
+                finderId,
+                itemCategory,
+                itemLostAt,
+                0 // bonus points
+            );
+
+            alert('✅ Item marked as returned!\n\nReward points have been issued to the finder.');
+
+            // Reload page to show updated status
+            window.location.reload();
+        } catch (error: any) {
+            alert(`❌ Failed to mark as returned: ${error.message}`);
+        } finally {
+            setIsMarkingReturned(false);
+        }
+    };
+
+    const handleReport = async () => {
+        if (hasReported) {
+            alert('⚠️ You have already reported this user for this match.');
+            return;
+        }
+
+        if (!confirm('⚠️ Report this user for suspicious behavior?\n\nThis will flag their account for admin review.')) {
+            return;
+        }
+
+        setIsReporting(true);
+        try {
+            const user = await getCurrentUser();
+            if (!user || !otherUserId) return;
+
+            await submitHarassmentReport(user.id, {
+                reported_user_id: otherUserId,
+                match_id: match.id,
+                report_type: 'scam',
+                description: `User reported from match. Suspicious activity detected.`,
+                severity: 'medium'
+            });
+
+            setHasReported(true);
+            alert('✅ Report submitted! Admin team will review this match.');
+        } catch (error: any) {
+            alert('❌ Failed to submit report: ' + error.message);
+        } finally {
+            setIsReporting(false);
+        }
+    };
 
     if (!otherItem) return null;
 
@@ -179,8 +274,52 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                                 Waiting for the other party to accept...
                             </p>
                         )}
+
+                        {/* Item Returned Button - Only for owner when both accepted */}
+                        {bothAccepted && userRole === 'owner' && !itemReturned && (
+                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <button
+                                    onClick={handleMarkAsReturned}
+                                    disabled={isMarkingReturned}
+                                    className="w-full px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isMarkingReturned ? '⏳ Processing...' : '✅ Mark Item as Returned'}
+                                </button>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                                    Finder will receive reward points
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Item Returned Status */}
+                        {itemReturned && (
+                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-center">
+                                    <p className="text-sm font-bold text-green-700 dark:text-green-400">
+                                        ✅ Item Returned
+                                    </p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        {match.reward_amount && `Reward issued: ${match.reward_amount} points`}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
+
+                {/* Report Button - Always visible */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={handleReport}
+                        disabled={isReporting || hasReported}
+                        className={`w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors ${hasReported
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                            : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                        {hasReported ? '✓ Already Reported' : isReporting ? '⏳ Reporting...' : '🚨 Report Suspicious Activity'}
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -149,11 +149,22 @@ export async function updatePassword(newPassword: string) {
 
 /**
  * Change password for logged-in user (verifies current password first)
+ * Enforces 3-day minimum between password changes
  */
 export async function changePassword(currentPassword: string, newPassword: string) {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) throw new Error('No user logged in');
+
+    // Check if user can change password (3-day restriction)
+    const { canChangePassword } = await import('./security.service');
+    const { canChange, daysRemaining } = await canChangePassword(user.id);
+
+    if (!canChange) {
+        throw new Error(
+            `You can change your password again in ${daysRemaining} day(s). This is a security measure to prevent account takeover.`
+        );
+    }
 
     // Verify current password by attempting to sign in
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -171,6 +182,10 @@ export async function changePassword(currentPassword: string, newPassword: strin
     });
 
     if (error) throw error;
+
+    // Update last password change timestamp
+    const { updateLastPasswordChange } = await import('./security.service');
+    await updateLastPasswordChange(user.id);
 }
 
 /**

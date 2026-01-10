@@ -121,14 +121,14 @@ const ScoreBreakdown: React.FC<ScoreBreakdownProps> = ({ breakdown, showDetails 
                                             </span>
                                         )}
                                     </div>
-                                    <span className={`font-bold ${getScoreColor(category.score, category.maxScore)}`}>
-                                        {category.score}/{category.maxScore}
+                                    <span className={`font-bold ${getScoreColor(Math.min(category.score, category.maxScore), category.maxScore)}`}>
+                                        {Math.min(Math.round(category.score), category.maxScore)}/{category.maxScore}
                                     </span>
                                 </div>
-                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                                     <div
                                         className={`h-2 rounded-full transition-all duration-300 ${category.color}`}
-                                        style={{ width: `${(category.score / category.maxScore) * 100}%` }}
+                                        style={{ width: `${Math.min((category.score / category.maxScore) * 100, 100)}%` }}
                                     />
                                 </div>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">

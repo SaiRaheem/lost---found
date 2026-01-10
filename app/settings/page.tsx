@@ -6,6 +6,7 @@ import Layout from '@/components/layout/Layout';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import PasswordStrength from '@/components/ui/PasswordStrength';
+import PasswordChangeRestriction from '@/components/ui/PasswordChangeRestriction';
 import { changePassword, validatePassword } from '@/services/supabase/auth.service';
 import { supabase } from '@/services/supabase/client';
 
@@ -126,6 +127,8 @@ export default function SettingsPage() {
                     <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">
                         Change Password
                     </h2>
+
+                    <PasswordChangeRestriction />
 
                     <form onSubmit={handleChangePassword} className="space-y-6">
                         {error && (
