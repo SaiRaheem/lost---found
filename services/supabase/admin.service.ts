@@ -168,3 +168,109 @@ export async function getRecentActivity() {
         return [];
     }
 }
+
+/**
+ * Get all user transactions with user details for admin view
+ */
+export async function getUsersWithRewards() {
+    try {
+        console.log('🔍 Fetching user transactions for admin...');
+
+        // Get all users first
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('id, name, email, phone, reward_balance');
+
+        if (usersError) {
+            console.error('❌ Error fetching users:', usersError);
+            throw usersError;
+        }
+        console.log('✅ Users fetched:', users?.length || 0);
+        console.log('📋 User IDs:', users?.map(u => ({ id: u.id, name: u.name, is_admin: u.is_admin })));
+
+        // Get all purchases with user and shop item details
+        const { data: purchases, error: purchasesError } = await supabase
+            .from('purchases')
+            .select(`
+                id,
+                user_id,
+                points_spent,
+                status,
+                created_at,
+                shop_item_id,
+                shop_items(name, icon)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (purchasesError) {
+            console.error('❌ Error fetching purchases:', purchasesError);
+            throw purchasesError;
+        }
+        console.log('✅ Purchases fetched:', purchases?.length || 0, purchases);
+
+        // Get all redemptions with user and gift card details
+        const { data: redemptions, error: redemptionsError } = await supabase
+            .from('redemptions')
+            .select(`
+                id,
+                user_id,
+                points_spent,
+                created_at,
+                gift_card_id,
+                gift_cards(name, icon)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (redemptionsError) {
+            console.error('❌ Error fetching redemptions:', redemptionsError);
+            throw redemptionsError;
+        }
+        console.log('✅ Redemptions fetched:', redemptions?.length || 0);
+
+        // Combine all transactions with user details
+        const allTransactions = [
+            ...(purchases || []).map((p: any) => {
+                const user = users?.find(u => u.id === p.user_id);
+                console.log(`🔍 Purchase user_id: ${p.user_id}, Found user:`, user ? user.name : 'NOT FOUND');
+                return {
+                    id: p.id,
+                    userName: user?.name || 'Unknown',
+                    userEmail: user?.email || user?.phone || '',
+                    itemBought: p.shop_items?.name || 'Unknown Item',
+                    icon: p.shop_items?.icon || '🛍️',
+                    cost: p.points_spent,
+                    availableBalance: user?.reward_balance || 0,
+                    date: p.created_at,
+                    type: 'Purchase'
+                };
+            }),
+            ...(redemptions || []).map((r: any) => {
+                const user = users?.find(u => u.id === r.user_id);
+                return {
+                    id: r.id,
+                    userName: user?.name || 'Unknown',
+                    userEmail: user?.email || user?.phone || '',
+                    itemBought: r.gift_cards?.name || 'Unknown Card',
+                    icon: r.gift_cards?.icon || '🎁',
+                    cost: r.points_spent,
+                    availableBalance: user?.reward_balance || 0,
+                    date: r.created_at,
+                    type: 'Redemption'
+                };
+            })
+        ];
+
+        console.log('✅ Total transactions combined:', allTransactions.length);
+
+        // Sort by date (most recent first)
+        const sorted = allTransactions.sort((a, b) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        console.log('✅ Returning sorted transactions:', sorted.length);
+        return sorted;
+    } catch (error) {
+        console.error('❌ Error fetching user transactions:', error);
+        return [];
+    }
+}

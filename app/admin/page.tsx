@@ -10,7 +10,8 @@ import {
     getAllLostItems,
     getAllFoundItems,
     getAllMatches,
-    getRecentActivity
+    getRecentActivity,
+    getUsersWithRewards
 } from '@/services/supabase/admin.service';
 import { checkCurrentUserIsAdmin } from '@/services/supabase/admin-auth.service';
 import { supabase } from '@/services/supabase/client';
@@ -30,7 +31,8 @@ export default function AdminPage() {
     const [lostItems, setLostItems] = useState<LostItem[]>([]);
     const [foundItems, setFoundItems] = useState<FoundItem[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'overview' | 'lost' | 'found' | 'matches'>('overview');
+    const [usersWithRewards, setUsersWithRewards] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'overview' | 'lost' | 'found' | 'matches' | 'users'>('overview');
 
     useEffect(() => {
         const checkAdminAndFetchData = async () => {
@@ -49,17 +51,19 @@ export default function AdminPage() {
                 setIsAuthorized(true);
 
                 // Fetch all data in parallel
-                const [statsData, lostData, foundData, activityData] = await Promise.all([
+                const [statsData, lostData, foundData, activityData, usersData] = await Promise.all([
                     getAdminStats(),
                     getAllLostItems(),
                     getAllFoundItems(),
                     getRecentActivity(),
+                    getUsersWithRewards(),
                 ]);
 
                 setStats(statsData);
                 setLostItems(lostData);
                 setFoundItems(foundData);
                 setRecentActivity(activityData);
+                setUsersWithRewards(usersData);
             } catch (error) {
                 console.error('Error fetching admin data:', error);
                 alert('Failed to load admin data');
@@ -77,17 +81,19 @@ export default function AdminPage() {
 
         const fetchData = async () => {
             try {
-                const [statsData, lostData, foundData, activityData] = await Promise.all([
+                const [statsData, lostData, foundData, activityData, usersData] = await Promise.all([
                     getAdminStats(),
                     getAllLostItems(),
                     getAllFoundItems(),
                     getRecentActivity(),
+                    getUsersWithRewards(),
                 ]);
 
                 setStats(statsData);
                 setLostItems(lostData);
                 setFoundItems(foundData);
                 setRecentActivity(activityData);
+                setUsersWithRewards(usersData);
             } catch (error) {
                 console.error('Error refreshing admin data:', error);
             }
@@ -120,10 +126,30 @@ export default function AdminPage() {
             })
             .subscribe();
 
+        // Subscribe to purchases changes
+        const purchasesChannel = supabase
+            .channel('admin-purchases')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, () => {
+                console.log('Purchases changed, refreshing...');
+                fetchData();
+            })
+            .subscribe();
+
+        // Subscribe to redemptions changes
+        const redemptionsChannel = supabase
+            .channel('admin-redemptions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, () => {
+                console.log('Redemptions changed, refreshing...');
+                fetchData();
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(lostChannel);
             supabase.removeChannel(foundChannel);
             supabase.removeChannel(matchChannel);
+            supabase.removeChannel(purchasesChannel);
+            supabase.removeChannel(redemptionsChannel);
         };
     }, [isAuthorized]);
 
@@ -268,6 +294,15 @@ export default function AdminPage() {
                                 }`}
                         >
                             ⚡ Matches
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`flex-shrink-0 py-2 px-4 sm:px-6 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${activeTab === 'users'
+                                ? 'bg-primary text-white shadow-glow'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                                }`}
+                        >
+                            👥 Users & Rewards
                         </button>
                     </div>
                 </div>
@@ -478,6 +513,61 @@ export default function AdminPage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                                 <p className="text-gray-500 dark:text-gray-400">Match details will be displayed here</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'users' && (
+                        <div className="space-y-4">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">User Transactions</h2>
+                            <div className="overflow-x-auto -mx-6 px-6">
+                                <table className="w-full min-w-[800px]">
+                                    <thead className="border-b border-gray-200 dark:border-gray-700">
+                                        <tr>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Icon</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">User Name</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Item Bought</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Cost</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Available Balance</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Type</th>
+                                            <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {usersWithRewards.length > 0 ? (
+                                            usersWithRewards.map((transaction: any) => (
+                                                <tr key={transaction.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                    <td className="py-3 px-4 text-2xl">{transaction.icon}</td>
+                                                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
+                                                        {transaction.userName}
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">{transaction.userEmail}</p>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{transaction.itemBought}</td>
+                                                    <td className="py-3 px-4 text-sm font-bold text-red-600 dark:text-red-400">-{transaction.cost} pts</td>
+                                                    <td className="py-3 px-4 text-sm font-bold text-primary">{transaction.availableBalance} pts</td>
+                                                    <td className="py-3 px-4">
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${transaction.type === 'Purchase'
+                                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                                            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                                                            }`}>
+                                                            {transaction.type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                                                        {new Date(transaction.date).toLocaleDateString()} <br />
+                                                        {new Date(transaction.date).toLocaleTimeString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                                                    No transactions found
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}
