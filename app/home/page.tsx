@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { Search, AlertCircle, Package, TrendingUp, ArrowRight, Gift, Trophy } from 'lucide-react';
 import { getUserRewardBalance } from '@/services/supabase/rewards.service';
+import { supabase } from '@/services/supabase/client';
 
 export default function HomePage() {
     const isLoading = useAuthProtection();
@@ -17,7 +18,10 @@ export default function HomePage() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const balance = await getUserRewardBalance();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                const balance = await getUserRewardBalance(user.id);
                 setStats({ balance, loading: false });
             } catch (error) {
                 console.error('Error fetching stats:', error);
