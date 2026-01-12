@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { Toaster } from '@/components/ui/use-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,7 +21,10 @@ export default function RootLayout({
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
                 <ThemeProvider>
-                    {children}
+                    <div className="gradient-mesh min-h-screen">
+                        {children}
+                    </div>
+                    <Toaster />
                 </ThemeProvider>
             </body>
         </html>
