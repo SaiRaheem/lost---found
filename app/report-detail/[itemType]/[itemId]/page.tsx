@@ -243,7 +243,10 @@ export default function ReportDetailPage() {
             const response = await fetch('/api/matches/reject', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ matchId })
+                body: JSON.stringify({
+                    matchId,
+                    userId: currentUserId
+                })
             });
 
             const data = await response.json();

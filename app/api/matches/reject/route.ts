@@ -1,56 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rejectMatch, RejectionFeedback } from '@/services/supabase/rejection.service';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
     try {
-        // Create server-side Supabase client with cookies
-        const cookieStore = cookies();
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-        // Get auth token from cookies
-        const authToken = cookieStore.get('sb-access-token')?.value ||
-            cookieStore.get('sb-localhost-auth-token')?.value;
-
-        if (!authToken) {
-            console.error('No auth token found in cookies');
-            return NextResponse.json(
-                { error: 'Unauthorized - No auth token' },
-                { status: 401 }
-            );
-        }
-
-        // Create Supabase client with auth token
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: {
-                headers: {
-                    Authorization: `Bearer ${authToken}`
-                }
-            }
-        });
-
-        // Get current user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-            console.error('Auth error:', authError);
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
-
-        console.log('Authenticated user:', user.id);
-
         // Parse request body
         const body = await request.json();
-        const { matchId, feedback } = body;
+        const { matchId, userId, feedback } = body;
 
         if (!matchId) {
             return NextResponse.json(
                 { error: 'Match ID is required' },
+                { status: 400 }
+            );
+        }
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: 'User ID is required' },
                 { status: 400 }
             );
         }
@@ -68,8 +34,10 @@ export async function POST(request: NextRequest) {
             validatedFeedback = feedback;
         }
 
+        console.log('Rejecting match:', matchId, 'for user:', userId);
+
         // Reject the match
-        const result = await rejectMatch(matchId, user.id, validatedFeedback);
+        const result = await rejectMatch(matchId, userId, validatedFeedback);
 
         if (!result.success) {
             return NextResponse.json(
