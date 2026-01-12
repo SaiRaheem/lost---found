@@ -90,7 +90,9 @@ export async function addToRejectedPairs(
     rejectedBy: string,
     feedback?: RejectionFeedback
 ): Promise<void> {
-    const { error } = await supabase
+    console.log('Adding to rejected pairs:', { lostItemId, foundItemId, rejectedBy, feedback });
+
+    const { data, error } = await supabase
         .from('rejected_pairs')
         .insert({
             lost_item_id: lostItemId,
@@ -98,11 +100,17 @@ export async function addToRejectedPairs(
             rejected_by: rejectedBy,
             rejection_reason: feedback?.reason || null,
             feedback: feedback ? { reason: feedback.reason, details: feedback.details } : null
-        });
+        })
+        .select();
 
-    if (error && !error.message.includes('duplicate')) {
+    if (error) {
         console.error('Error adding to rejected pairs:', error);
-        throw error;
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        if (!error.message.includes('duplicate')) {
+            throw error;
+        }
+    } else {
+        console.log('Successfully added to rejected_pairs:', data);
     }
 }
 
@@ -152,7 +160,9 @@ async function updateRejectionStats(
     userId: string,
     matchScore?: number
 ): Promise<void> {
-    const { error } = await supabase
+    console.log('Updating rejection stats:', { userId, matchScore });
+
+    const { data, error } = await supabase
         .rpc('update_rejection_stats', {
             p_user_id: userId,
             p_match_score: matchScore || null
@@ -160,6 +170,9 @@ async function updateRejectionStats(
 
     if (error) {
         console.error('Error updating rejection stats:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+    } else {
+        console.log('Successfully updated rejection stats');
     }
 }
 
