@@ -1,20 +1,38 @@
-import React, { ButtonHTMLAttributes, forwardRef } from 'react';
+import * as React from 'react';
+import { Loader2 } from 'lucide-react';
+import { cn } from '@/utils/cn';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'accent' | 'danger';
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
+    leftIcon?: React.ReactNode;
+    rightIcon?: React.ReactNode;
     children: React.ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ variant = 'primary', size = 'md', isLoading = false, className = '', children, disabled, ...props }, ref) => {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+    (
+        {
+            variant = 'primary',
+            size = 'md',
+            isLoading = false,
+            leftIcon,
+            rightIcon,
+            className,
+            children,
+            disabled,
+            ...props
+        },
+        ref
+    ) => {
         const baseClasses = 'btn';
 
         const variantClasses = {
             primary: 'btn-primary',
             secondary: 'btn-secondary',
-            accent: 'btn-accent',
+            outline: 'btn-outline',
+            ghost: 'btn-ghost',
             danger: 'btn-danger',
         };
 
@@ -24,22 +42,29 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             lg: 'px-8 py-4 text-lg',
         };
 
-        const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
-
         return (
             <button
                 ref={ref}
-                className={classes}
+                className={cn(
+                    baseClasses,
+                    variantClasses[variant],
+                    sizeClasses[size],
+                    className
+                )}
                 disabled={disabled || isLoading}
                 {...props}
             >
                 {isLoading ? (
-                    <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Loading...</span>
-                    </div>
+                    </>
                 ) : (
-                    children
+                    <>
+                        {leftIcon && <span className="inline-flex">{leftIcon}</span>}
+                        {children}
+                        {rightIcon && <span className="inline-flex">{rightIcon}</span>}
+                    </>
                 )}
             </button>
         );
