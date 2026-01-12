@@ -10,9 +10,10 @@ interface MatchCardProps {
     userRole: 'owner' | 'finder';
     onAccept: (matchId: string) => void;
     onReject: (matchId: string) => void;
+    disabled?: boolean;
 }
 
-const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReject }) => {
+const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReject, disabled = false }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [isReporting, setIsReporting] = useState(false);
     const [hasReported, setHasReported] = useState(false);
@@ -256,15 +257,17 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={() => onAccept(match.id)}
-                                    className="flex-1 btn-primary"
+                                    disabled={disabled}
+                                    className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Accept Match
                                 </button>
                                 <button
                                     onClick={() => onReject(match.id)}
-                                    className="flex-1 btn-secondary"
+                                    disabled={disabled}
+                                    className="flex-1 btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Reject
+                                    {disabled ? 'Rejecting...' : 'Reject'}
                                 </button>
                             </div>
                         )}

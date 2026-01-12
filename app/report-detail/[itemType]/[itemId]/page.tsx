@@ -230,30 +230,40 @@ export default function ReportDetailPage() {
         }
     };
 
+    const [isRejecting, setIsRejecting] = useState(false);
+
     const handleRejectMatch = async (matchId: string) => {
+        if (isRejecting) return; // Prevent duplicate clicks
+
         try {
-            await rejectMatch(matchId, userRole);
+            setIsRejecting(true);
+            console.log('Rejecting match:', matchId);
 
-            // Update item status back to 'active' when match is rejected
-            await updateItemStatus(itemId, itemType, 'active');
+            // Call the new rejection API
+            const response = await fetch('/api/matches/reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matchId })
+            });
 
-            // Refresh matches and item data
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to reject match');
+            }
+
+            console.log('Match rejected successfully:', data);
+
+            // Refresh matches to show updated status
             const fetchedMatches = await getMatchesForItem(itemId, itemType);
             setMatches(fetchedMatches);
 
-            // Refresh item to update status
-            const itemData = itemType === 'lost'
-                ? await supabase.from('lost_items').select('*').eq('id', itemId).single()
-                : await supabase.from('found_items').select('*').eq('id', itemId).single();
-
-            if (itemData.data) {
-                setItem(itemData.data);
-            }
-
-            alert('Match rejected. Item status updated to active.');
+            alert('Match rejected successfully. We\'ll keep looking for better matches!');
         } catch (error) {
             console.error('Error rejecting match:', error);
-            alert('Failed to reject match');
+            alert('Failed to reject match. Please try again.');
+        } finally {
+            setIsRejecting(false);
         }
     };
 
@@ -451,6 +461,7 @@ export default function ReportDetailPage() {
                                 userRole={userRole}
                                 onAccept={handleAcceptMatch}
                                 onReject={handleRejectMatch}
+                                disabled={isRejecting}
                             />
                         ))}
                     </div>
