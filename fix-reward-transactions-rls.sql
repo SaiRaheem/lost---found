@@ -26,17 +26,6 @@ CREATE POLICY "System can update transactions"
     USING (true)
     WITH CHECK (true);
 
--- Admins can view all transactions
-CREATE POLICY "Admins can view all transactions"
-    ON reward_transactions FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM users
-            WHERE users.id = auth.uid()
-            AND users.role = 'admin'
-        )
-    );
-
 -- Grant necessary permissions
 GRANT SELECT ON reward_transactions TO authenticated;
 GRANT INSERT ON reward_transactions TO authenticated;
