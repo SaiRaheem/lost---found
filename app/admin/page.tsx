@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
+import { Card, CardContent } from '@/components/ui/Card';
+import { AlertCircle, Search, Zap, CheckCircle, Users } from 'lucide-react';
 import type { LostItem, FoundItem } from '@/types/database.types';
 import { formatForDisplay } from '@/utils/date-utils';
 import {
@@ -193,84 +195,84 @@ export default function AdminPage() {
         <Layout showHeader showNotifications>
             <div className="max-w-7xl mx-auto py-8 space-y-6">
                 {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-gradient mb-2">Admin Dashboard</h1>
-                    <p className="text-gray-600 dark:text-gray-400">
+                <div className="animate-fade-in">
+                    <h1 className="text-3xl md:text-4xl font-bold text-gradient-rainbow mb-2">Admin Dashboard</h1>
+                    <p className="text-muted-foreground">
                         Manage and monitor the Lost & Found system
                     </p>
                 </div>
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="glass-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Lost Items</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalLostItems}</p>
+                    <Card variant="glass" hover className="animate-slide-up">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Lost Items</p>
+                                    <p className="text-3xl font-bold">{stats.totalLostItems}</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                    <AlertCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="glass-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Found Items</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalFoundItems}</p>
+                    <Card variant="glass" hover className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Found Items</p>
+                                    <p className="text-3xl font-bold">{stats.totalFoundItems}</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                    <Search className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="glass-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Matches</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalMatches}</p>
+                    <Card variant="glass" hover className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Matches</p>
+                                    <p className="text-3xl font-bold">{stats.totalMatches}</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                    <Zap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="glass-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Returned</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.successfulReturns}</p>
+                    <Card variant="glass" hover className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Returned</p>
+                                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.successfulReturns}</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
 
-                    <div className="glass-card p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.activeUsers}</p>
+                    <Card variant="glass" hover className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Active Users</p>
+                                    <p className="text-3xl font-bold text-gradient-primary">{stats.activeUsers}</p>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                    <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                                </div>
                             </div>
-                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Tabs - Mobile Responsive */}
