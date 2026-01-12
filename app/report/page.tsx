@@ -9,6 +9,8 @@ import Textarea from '@/components/ui/Textarea';
 import Button from '@/components/ui/Button';
 import ImageUpload from '@/components/ui/ImageUpload';
 import LocationPicker from '@/components/ui/LocationPicker';
+import MapLocationPicker from '@/components/ui/MapLocationPicker';
+import LocationCapture from '@/components/ui/LocationCapture';
 import { ITEM_CATEGORIES } from '@/utils/constants';
 import { toProperCase, trimExtraSpaces } from '@/utils/formatting';
 import { isRequired, minLength, isNotFutureDate } from '@/utils/validation';
@@ -29,6 +31,9 @@ function ReportPageContent() {
             ...prev,
             gps_latitude: latitude,
             gps_longitude: longitude,
+            latitude: latitude,
+            longitude: longitude,
+            // Note: location_accuracy will be added when we use getCurrentLocation with accuracy
         }));
     };
 
@@ -44,6 +49,9 @@ function ReportPageContent() {
         college: '',
         gps_latitude: undefined as number | undefined,
         gps_longitude: undefined as number | undefined,
+        latitude: undefined as number | undefined,
+        longitude: undefined as number | undefined,
+        location_accuracy: undefined as number | undefined,
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -374,17 +382,12 @@ function ReportPageContent() {
                             placeholder="e.g., 2nd Floor, Near Entrance"
                         />
 
-                        {/* GPS Location Picker */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                GPS Location (Optional)
-                            </label>
-                            <LocationPicker
-                                onLocationSelect={handleLocationSelect}
-                                currentLatitude={formData.gps_latitude}
-                                currentLongitude={formData.gps_longitude}
-                            />
-                        </div>
+                        {/* Map Location Picker with Search */}
+                        <MapLocationPicker
+                            onLocationSelect={handleLocationSelect}
+                            initialLat={formData.latitude || formData.gps_latitude}
+                            initialLng={formData.longitude || formData.gps_longitude}
+                        />
 
                         {/* Date and Time */}
                         <Input

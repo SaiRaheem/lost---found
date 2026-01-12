@@ -249,13 +249,36 @@ export function findMatches(
     lostItem: LostItem,
     foundItems: FoundItem[]
 ): Array<{ foundItem: FoundItem; breakdown: MatchBreakdown }> {
-    const matches = foundItems
-        .map(foundItem => ({
-            foundItem,
-            breakdown: calculateMatchScore(lostItem, foundItem),
-        }))
-        .filter(match => isValidMatch(match.breakdown))
-        .sort((a, b) => b.breakdown.total_score - a.breakdown.total_score);
+    const matches: Array<{ foundItem: FoundItem; breakdown: MatchBreakdown }> = [];
 
-    return matches;
+    for (const foundItem of foundItems) {
+        // OPTIMIZATION: Pre-filter by location (1km radius)
+        // Skip items outside 1km range to reduce unnecessary calculations
+        if (lostItem.gps_latitude && lostItem.gps_longitude && foundItem.gps_latitude && foundItem.gps_longitude) {
+            const distance = calculateGPSDistance(
+                lostItem.gps_latitude,
+                lostItem.gps_longitude,
+                foundItem.gps_latitude,
+                foundItem.gps_longitude
+            );
+
+            // Skip if beyond 1km - don't even check other properties
+            if (distance > 1.0) {
+                console.log(`⏭️ Skipping item (${distance.toFixed(2)}km away, beyond 1km radius)`);
+                continue;
+            }
+
+            console.log(`✅ Item within range (${distance.toFixed(2)}km), checking match score...`);
+        }
+
+        // Calculate full match score only for items within 1km
+        const breakdown = calculateMatchScore(lostItem, foundItem);
+
+        if (isValidMatch(breakdown)) {
+            matches.push({ foundItem, breakdown });
+        }
+    }
+
+    // Sort by total score (highest first)
+    return matches.sort((a, b) => b.breakdown.total_score - a.breakdown.total_score);
 }

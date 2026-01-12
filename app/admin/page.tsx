@@ -131,7 +131,7 @@ export default function AdminPage() {
             .channel('admin-purchases')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' }, (payload) => {
                 console.log('🔔 Purchases changed!', payload);
-                fetchData();
+                setTimeout(() => fetchData(), 500);
             })
             .subscribe((status) => {
                 console.log('📡 Purchases subscription status:', status);
@@ -142,10 +142,22 @@ export default function AdminPage() {
             .channel('admin-redemptions')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions' }, (payload) => {
                 console.log('🔔 Redemptions changed!', payload);
-                fetchData();
+                setTimeout(() => fetchData(), 500);
             })
             .subscribe((status) => {
                 console.log('📡 Redemptions subscription status:', status);
+            });
+
+        // Subscribe to reward_transactions changes (for earned points)
+        const rewardTransactionsChannel = supabase
+            .channel('admin-reward-transactions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'reward_transactions' }, (payload) => {
+                console.log('🔔 Reward transactions changed!', payload);
+                // Small delay to ensure transaction is committed
+                setTimeout(() => fetchData(), 500);
+            })
+            .subscribe((status) => {
+                console.log('📡 Reward transactions subscription status:', status);
             });
 
         return () => {
@@ -154,6 +166,7 @@ export default function AdminPage() {
             supabase.removeChannel(matchChannel);
             supabase.removeChannel(purchasesChannel);
             supabase.removeChannel(redemptionsChannel);
+            supabase.removeChannel(rewardTransactionsChannel);
         };
     }, [isAuthorized]);
 
@@ -547,19 +560,30 @@ export default function AdminPage() {
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">{transaction.userEmail}</p>
                                                     </td>
                                                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{transaction.itemBought}</td>
-                                                    <td className="py-3 px-4 text-sm font-bold text-red-600 dark:text-red-400">-{transaction.cost} pts</td>
+                                                    <td className={`py-3 px-4 text-sm font-bold ${transaction.cost > 0
+                                                        ? 'text-green-600 dark:text-green-400'
+                                                        : 'text-red-600 dark:text-red-400'
+                                                        }`}>
+                                                        {transaction.cost > 0 ? '+' : ''}{transaction.cost} pts
+                                                    </td>
                                                     <td className="py-3 px-4 text-sm font-bold text-primary">{transaction.availableBalance} pts</td>
                                                     <td className="py-3 px-4">
                                                         <span className={`text-xs px-2 py-1 rounded-full ${transaction.type === 'Purchase'
                                                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                                                            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                                                            : transaction.type === 'Redemption'
+                                                                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                                                                : transaction.type === 'Earned'
+                                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                                    : transaction.type === 'Bonus'
+                                                                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                                             }`}>
                                                             {transaction.type}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                                                        {new Date(transaction.date).toLocaleDateString()} <br />
-                                                        {new Date(transaction.date).toLocaleTimeString()}
+                                                        {new Date(transaction.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} <br />
+                                                        {new Date(transaction.date).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                     </td>
                                                 </tr>
                                             ))

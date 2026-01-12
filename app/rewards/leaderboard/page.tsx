@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
+import { getLeaderboard } from '@/services/supabase/rewards.service';
+import { supabase } from '@/services/supabase/client';
 
 interface LeaderboardUser {
     rank: number;
@@ -17,22 +19,59 @@ interface LeaderboardUser {
 export default function LeaderboardPage() {
     const router = useRouter();
     const [timeframe, setTimeframe] = useState('all-time');
-    const currentUserId = 'user-123'; // TODO: Get from auth
+    const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    // Mock data - TODO: Replace with API
-    const leaderboard: LeaderboardUser[] = [
-        { rank: 1, id: '1', name: 'Rahul Kumar', points: 2450, itemsReturned: 45, badge: '👑', avatar: '🧑' },
-        { rank: 2, id: '2', name: 'Priya Sharma', points: 2100, itemsReturned: 38, badge: '🥈', avatar: '👩' },
-        { rank: 3, id: '3', name: 'Amit Patel', points: 1850, itemsReturned: 32, badge: '🥉', avatar: '🧑' },
-        { rank: 4, id: '4', name: 'Sneha Reddy', points: 1600, itemsReturned: 28, badge: '⭐', avatar: '👩' },
-        { rank: 5, id: '5', name: 'Vikram Singh', points: 1400, itemsReturned: 24, badge: '⭐', avatar: '🧑' },
-        { rank: 6, id: '6', name: 'Anjali Gupta', points: 1200, itemsReturned: 21, badge: '⭐', avatar: '👩' },
-        { rank: 7, id: '7', name: 'Rohan Mehta', points: 1050, itemsReturned: 19, badge: '⭐', avatar: '🧑' },
-        { rank: 8, id: '8', name: 'Kavya Iyer', points: 900, itemsReturned: 16, badge: '⭐', avatar: '👩' },
-        { rank: 9, id: '9', name: 'Arjun Nair', points: 750, itemsReturned: 14, badge: '⭐', avatar: '🧑' },
-        { rank: 10, id: '10', name: 'Divya Joshi', points: 650, itemsReturned: 12, badge: '⭐', avatar: '👩' },
-        { rank: 11, id: currentUserId, name: 'You', points: 450, itemsReturned: 8, badge: '🌟', avatar: '😊' }
-    ];
+    useEffect(() => {
+        fetchLeaderboard();
+        getCurrentUser();
+    }, [timeframe]);
+
+    const getCurrentUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUserId(user?.id || null);
+    };
+
+    const fetchLeaderboard = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const data = await getLeaderboard(50);
+
+            // Assign badges and avatars
+            const enrichedData = data.map((user: any) => ({
+                ...user,
+                badge: getBadge(user.rank),
+                avatar: getAvatar(user.name)
+            }));
+
+            setLeaderboard(enrichedData);
+        } catch (err) {
+            console.error('Error fetching leaderboard:', err);
+            setError('Failed to load leaderboard');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getBadge = (rank: number): string => {
+        if (rank === 1) return '👑';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        if (rank <= 10) return '⭐';
+        return '🌟';
+    };
+
+    const getAvatar = (name: string): string => {
+        // Simple avatar based on first letter
+        const firstLetter = name.charAt(0).toUpperCase();
+        const avatars = ['🧑', '👩', '👨', '🧒', '👦', '👧'];
+        const index = firstLetter.charCodeAt(0) % avatars.length;
+        return avatars[index];
+    };
 
     const getRankColor = (rank: number) => {
         if (rank === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
@@ -42,6 +81,39 @@ export default function LeaderboardPage() {
     };
 
     const currentUser = leaderboard.find(u => u.id === currentUserId);
+
+    if (loading) {
+        return (
+            <Layout>
+                <div className="container mx-auto px-4 py-6 max-w-4xl pb-24 md:pb-6">
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                            <p className="text-gray-600 dark:text-gray-400">Loading leaderboard...</p>
+                        </div>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
+    if (error) {
+        return (
+            <Layout>
+                <div className="container mx-auto px-4 py-6 max-w-4xl pb-24 md:pb-6">
+                    <div className="glass-card p-6 text-center">
+                        <p className="text-red-600 dark:text-red-400 mb-4">❌ {error}</p>
+                        <button
+                            onClick={fetchLeaderboard}
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout>
@@ -104,72 +176,80 @@ export default function LeaderboardPage() {
                 )}
 
                 {/* Top 3 Podium */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                    {leaderboard.slice(0, 3).map(user => (
-                        <div
-                            key={user.id}
-                            className={`glass-card p-4 text-center ${user.rank === 1 ? 'transform scale-110' : ''
-                                }`}
-                        >
-                            <div className="text-3xl mb-2">{user.badge}</div>
-                            <div className="text-2xl mb-2">{user.avatar}</div>
-                            <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
-                                {user.name}
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                {user.itemsReturned} items
-                            </p>
-                            <p className="text-lg font-bold text-primary">
-                                {user.points} pts
-                            </p>
-                        </div>
-                    ))}
-                </div>
+                {leaderboard.length >= 3 && (
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                        {leaderboard.slice(0, 3).map(user => (
+                            <div
+                                key={user.id}
+                                className={`glass-card p-4 text-center ${user.rank === 1 ? 'transform scale-110' : ''
+                                    }`}
+                            >
+                                <div className="text-3xl mb-2">{user.badge}</div>
+                                <div className="text-2xl mb-2">{user.avatar}</div>
+                                <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                                    {user.name}
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                    {user.itemsReturned} items
+                                </p>
+                                <p className="text-lg font-bold text-primary">
+                                    {user.points} pts
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Full Leaderboard */}
                 <div className="glass-card p-4">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                         All Rankings
                     </h2>
-                    <div className="space-y-2">
-                        {leaderboard.map(user => (
-                            <div
-                                key={user.id}
-                                className={`p-3 rounded-lg transition-all ${user.id === currentUserId
-                                        ? 'bg-primary/10 border-2 border-primary'
-                                        : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${getRankColor(user.rank)}`}>
-                                        {user.rank <= 3 ? user.badge : `#${user.rank}`}
-                                    </div>
-                                    <div className="text-2xl">{user.avatar}</div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-gray-900 dark:text-white truncate">
-                                            {user.name}
-                                            {user.id === currentUserId && (
-                                                <span className="ml-2 text-xs bg-primary text-white px-2 py-0.5 rounded-full">
-                                                    You
-                                                </span>
-                                            )}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            {user.itemsReturned} items returned
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xl font-bold text-primary">
-                                            {user.points}
-                                        </p>
-                                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                                            points
-                                        </p>
+                    {leaderboard.length === 0 ? (
+                        <p className="text-center text-gray-600 dark:text-gray-400 py-8">
+                            No users on the leaderboard yet
+                        </p>
+                    ) : (
+                        <div className="space-y-2">
+                            {leaderboard.map(user => (
+                                <div
+                                    key={user.id}
+                                    className={`p-3 rounded-lg transition-all ${user.id === currentUserId
+                                            ? 'bg-primary/10 border-2 border-primary'
+                                            : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${getRankColor(user.rank)}`}>
+                                            {user.rank <= 3 ? user.badge : `#${user.rank}`}
+                                        </div>
+                                        <div className="text-2xl">{user.avatar}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 dark:text-white truncate">
+                                                {user.name}
+                                                {user.id === currentUserId && (
+                                                    <span className="ml-2 text-xs bg-primary text-white px-2 py-0.5 rounded-full">
+                                                        You
+                                                    </span>
+                                                )}
+                                            </p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                {user.itemsReturned} items returned
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xl font-bold text-primary">
+                                                {user.points}
+                                            </p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                points
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Info Card */}

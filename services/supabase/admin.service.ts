@@ -186,9 +186,21 @@ export async function getUsersWithRewards() {
             throw usersError;
         }
         console.log('✅ Users fetched:', users?.length || 0);
-        console.log('📋 User IDs:', users?.map(u => ({ id: u.id, name: u.name })));
 
-        // Get all purchases with user and shop item details
+        // Get ALL reward transactions (earned, bonus, redeemed, penalty)
+        // Order by ascending for correct balance calculation over time
+        const { data: allRewardTransactions, error: transactionsError } = await supabase
+            .from('reward_transactions')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (transactionsError) {
+            console.error('❌ Error fetching reward transactions:', transactionsError);
+            throw transactionsError;
+        }
+        console.log('✅ Reward transactions fetched:', allRewardTransactions?.length || 0);
+
+        // Get all purchases with shop item details
         const { data: purchases, error: purchasesError } = await supabase
             .from('purchases')
             .select(`
@@ -206,9 +218,9 @@ export async function getUsersWithRewards() {
             console.error('❌ Error fetching purchases:', purchasesError);
             throw purchasesError;
         }
-        console.log('✅ Purchases fetched:', purchases?.length || 0, purchases);
+        console.log('✅ Purchases fetched:', purchases?.length || 0);
 
-        // Get all redemptions with user and gift card details
+        // Get all redemptions with gift card details
         const { data: redemptions, error: redemptionsError } = await supabase
             .from('redemptions')
             .select(`
@@ -227,43 +239,67 @@ export async function getUsersWithRewards() {
         }
         console.log('✅ Redemptions fetched:', redemptions?.length || 0);
 
-        // Combine all transactions with user details
-        const allTransactions = [
-            ...(purchases || []).map((p: any) => {
-                const user = users?.find(u => u.id === p.user_id);
-                console.log(`🔍 Purchase user_id: ${p.user_id}, Found user:`, user ? user.name : 'NOT FOUND');
-                return {
-                    id: p.id,
-                    userName: user?.name || 'Unknown',
-                    userEmail: user?.email || user?.phone || '',
-                    itemBought: p.shop_items?.name || 'Unknown Item',
-                    icon: p.shop_items?.icon || '🛍️',
-                    cost: p.points_spent,
-                    availableBalance: user?.reward_balance || 0,
-                    date: p.created_at,
-                    type: 'Purchase'
-                };
-            }),
-            ...(redemptions || []).map((r: any) => {
-                const user = users?.find(u => u.id === r.user_id);
-                return {
-                    id: r.id,
-                    userName: user?.name || 'Unknown',
-                    userEmail: user?.email || user?.phone || '',
-                    itemBought: r.gift_cards?.name || 'Unknown Card',
-                    icon: r.gift_cards?.icon || '🎁',
-                    cost: r.points_spent,
-                    availableBalance: user?.reward_balance || 0,
-                    date: r.created_at,
-                    type: 'Redemption'
-                };
-            })
-        ];
 
-        console.log('✅ Total transactions combined:', allTransactions.length);
+        // Function to calculate balance at a specific time
+        // This calculates balance AFTER the transaction at targetDate
+        const getBalanceAtTime = (userId: string, targetDate: string): number => {
+            let balance = 0;
+            const targetTime = new Date(targetDate).getTime();
+
+            for (const tx of allRewardTransactions || []) {
+                const txTime = new Date(tx.created_at).getTime();
+                // Include transactions up to and including the target time
+                if (tx.user_id === userId && txTime <= targetTime) {
+                    balance += tx.points;
+                }
+            }
+            return balance;
+        };
+
+
+        // Combine all transactions - but ONLY use reward_transactions as source of truth
+        // This ensures balance is always correct
+        const combinedTransactions = (allRewardTransactions || []).map((tx: any) => {
+            const user = users?.find(u => u.id === tx.user_id);
+            const balanceAfter = getBalanceAtTime(tx.user_id, tx.created_at);
+
+            let icon = '💰'; // Default for earned
+            let typeName = 'Earned';
+
+            if (tx.type === 'bonus') {
+                icon = '🎁';
+                typeName = 'Bonus';
+            } else if (tx.type === 'penalty') {
+                icon = '⚠️';
+                typeName = 'Penalty';
+            } else if (tx.type === 'redeemed') {
+                // Check if it's a purchase or redemption based on metadata or reason
+                if (tx.reason?.includes('Purchased') || tx.reason?.includes('Shop')) {
+                    icon = '🛍️';
+                    typeName = 'Purchase';
+                } else {
+                    icon = '🎁';
+                    typeName = 'Redemption';
+                }
+            }
+
+            return {
+                id: tx.id,
+                userName: user?.name || 'Unknown',
+                userEmail: user?.email || user?.phone || '',
+                itemBought: tx.reason || (tx.type === 'penalty' ? 'Penalty' : 'Reward earned'),
+                icon: icon,
+                cost: tx.points, // Already has correct sign from database
+                availableBalance: balanceAfter,
+                date: tx.created_at,
+                type: typeName
+            };
+        });
+
+        console.log('✅ Total transactions combined:', combinedTransactions.length);
 
         // Sort by date (most recent first)
-        const sorted = allTransactions.sort((a, b) =>
+        const sorted = combinedTransactions.sort((a, b) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
 

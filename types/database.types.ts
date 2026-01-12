@@ -25,6 +25,9 @@ export interface LostItem {
     area: string;
     gps_latitude?: number;
     gps_longitude?: number;
+    latitude?: number;
+    longitude?: number;
+    location_accuracy?: number;
     datetime_lost: string;
     owner_name: string;
     owner_gender: 'male' | 'female' | 'other';
@@ -50,6 +53,9 @@ export interface FoundItem {
     area: string;
     gps_latitude?: number;
     gps_longitude?: number;
+    latitude?: number;
+    longitude?: number;
+    location_accuracy?: number;
     datetime_found: string;
     finder_name: string;
     finder_gender: 'male' | 'female' | 'other';
