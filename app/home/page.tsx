@@ -8,7 +8,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import Link from 'next/link';
 import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { Search, AlertCircle, Package, TrendingUp, ArrowRight, Gift, Trophy } from 'lucide-react';
-import { getUserBalance } from '@/services/supabase/rewards.service';
+import { getUserRewardBalance } from '@/services/supabase/rewards.service';
 
 export default function HomePage() {
     const isLoading = useAuthProtection();
@@ -17,7 +17,7 @@ export default function HomePage() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const balance = await getUserBalance();
+                const balance = await getUserRewardBalance();
                 setStats({ balance, loading: false });
             } catch (error) {
                 console.error('Error fetching stats:', error);
