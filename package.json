@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@radix-ui/react-toast": "^1.2.15",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.39.0",
     "@tensorflow-models/mobilenet": "^2.1.1",
@@ -17,6 +18,7 @@
     "@tensorflow/tfjs-backend-cpu": "^4.22.0",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
     "date-fns": "^3.0.0",
+    "framer-motion": "^12.26.0",
     "leaflet": "^1.9.4",
     "natural": "^7.0.7",
     "next": "^15.1.3",
