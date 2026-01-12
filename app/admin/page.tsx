@@ -193,7 +193,7 @@ export default function AdminPage() {
 
     return (
         <Layout showHeader showNotifications>
-            <div className="max-w-7xl mx-auto py-8 space-y-6">
+            <div className="max-w-7xl mx-auto py-8 px-4 space-y-6 pb-24 md:pb-8">
                 {/* Header */}
                 <div className="animate-fade-in">
                     <h1 className="text-3xl md:text-4xl font-bold text-gradient-rainbow mb-2">Admin Dashboard</h1>
