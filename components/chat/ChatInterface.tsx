@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send } from 'lucide-react';
 import { ChatMessage } from '@/types/database.types';
-import { formatForDisplay, getRelativeTime } from '@/utils/date-utils';
+import { getRelativeTime } from '@/utils/date-utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 
 interface ChatInterfaceProps {
     matchId: string;
@@ -39,77 +43,117 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     return (
-        <div className="glass-card p-6 space-y-4">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Private Chat</h3>
-
-            {/* Messages Container */}
-            <div className="h-96 overflow-y-auto scrollbar-thin space-y-3 p-4 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl">
-                {messages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                        <p className="text-center">
-                            No messages yet. Start the conversation!
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        {messages.map((message) => {
-                            const isCurrentUser = message.sender_id === currentUserId;
-                            return (
-                                <div
-                                    key={message.id}
-                                    className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <div
-                                        className={`max-w-[70%] rounded-2xl px-4 py-3 ${isCurrentUser
-                                                ? 'bg-primary text-white rounded-br-sm'
-                                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm'
-                                            }`}
+        <Card variant="glass">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">💬</span>
+                    Private Chat
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {/* Messages Container */}
+                <div className="h-96 overflow-y-auto scrollbar-thin space-y-3 p-4 bg-gradient-to-b from-slate-50/50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-950/50 rounded-xl">
+                    {messages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                            <div className="text-6xl mb-4 animate-bounce-slow">💬</div>
+                            <p className="text-center font-medium">
+                                No messages yet
+                            </p>
+                            <p className="text-sm text-center mt-1">
+                                Start the conversation!
+                            </p>
+                        </div>
+                    ) : (
+                        <AnimatePresence initial={false}>
+                            {messages.map((message, index) => {
+                                const isCurrentUser = message.sender_id === currentUserId;
+                                return (
+                                    <motion.div
+                                        key={message.id}
+                                        initial={{
+                                            opacity: 0,
+                                            y: 20,
+                                            scale: 0.8,
+                                            x: isCurrentUser ? 20 : -20
+                                        }}
+                                        animate={{
+                                            opacity: 1,
+                                            y: 0,
+                                            scale: 1,
+                                            x: 0
+                                        }}
+                                        exit={{
+                                            opacity: 0,
+                                            scale: 0.8
+                                        }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 500,
+                                            damping: 30,
+                                            delay: index * 0.05
+                                        }}
+                                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                                     >
-                                        <p className="text-sm break-words">{message.message}</p>
-                                        <p
-                                            className={`text-xs mt-1 ${isCurrentUser ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
+                                        <motion.div
+                                            whileHover={{ scale: 1.02 }}
+                                            className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-lg ${isCurrentUser
+                                                    ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-br-sm'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-bl-sm border border-slate-200 dark:border-slate-700'
                                                 }`}
                                         >
-                                            {getRelativeTime(message.created_at)}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div ref={messagesEndRef} />
-                    </>
-                )}
-            </div>
-
-            {/* Input Form */}
-            {disabled ? (
-                <div className="text-center p-4 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Chat is closed. This item has been marked as returned.
-                    </p>
+                                            <p className="text-sm break-words leading-relaxed">
+                                                {message.message}
+                                            </p>
+                                            <p
+                                                className={`text-xs mt-1.5 ${isCurrentUser
+                                                        ? 'text-white/70'
+                                                        : 'text-slate-500 dark:text-slate-400'
+                                                    }`}
+                                            >
+                                                {getRelativeTime(message.created_at)}
+                                            </p>
+                                        </motion.div>
+                                    </motion.div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </AnimatePresence>
+                    )}
                 </div>
-            ) : (
-                <form onSubmit={handleSubmit} className="flex gap-3">
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type your message..."
-                        className="flex-1 glass-input"
-                        disabled={disabled}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!newMessage.trim() || disabled}
-                        className="btn-primary px-6"
+
+                {/* Input Form */}
+                {disabled ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center p-4 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                    </button>
-                </form>
-            )}
-        </div>
+                        <p className="text-sm text-muted-foreground">
+                            💬 Chat is closed. This item has been marked as returned.
+                        </p>
+                    </motion.div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="flex gap-3">
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type your message..."
+                            className="flex-1 input"
+                            disabled={disabled}
+                        />
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            disabled={!newMessage.trim() || disabled}
+                            rightIcon={<Send className="w-4 h-4" />}
+                        >
+                            Send
+                        </Button>
+                    </form>
+                )}
+            </CardContent>
+        </Card>
     );
 };
 
