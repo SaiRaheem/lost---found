@@ -22,6 +22,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
     const userAccepted = userRole === 'owner' ? match.owner_accepted : match.finder_accepted;
     const otherAccepted = userRole === 'owner' ? match.finder_accepted : match.owner_accepted;
     const bothAccepted = userAccepted && otherAccepted;
+    const isRejected = match.status === 'rejected';
 
     const otherUserId = userRole === 'owner' ? match.found_item?.user_id : match.lost_item?.user_id;
 
@@ -240,42 +241,55 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Your status:</span>
-                            <span className={`font - medium ${userAccepted ? 'text-green-600' : 'text-gray-500'} `}>
-                                {userAccepted ? '✓ Accepted' : 'Pending'}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600 dark:text-gray-400">Other party:</span>
-                            <span className={`font - medium ${otherAccepted ? 'text-green-600' : 'text-gray-500'} `}>
-                                {otherAccepted ? '✓ Accepted' : 'Pending'}
-                            </span>
-                        </div>
-
-                        {!userAccepted && (
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => onAccept(match.id)}
-                                    disabled={disabled}
-                                    className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Accept Match
-                                </button>
-                                <button
-                                    onClick={() => onReject(match.id)}
-                                    disabled={disabled}
-                                    className="flex-1 btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {disabled ? 'Rejecting...' : 'Reject'}
-                                </button>
+                        {isRejected ? (
+                            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                                <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                                    ❌ Match Rejected
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    This match was rejected and won't be shown again
+                                </p>
                             </div>
-                        )}
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Your status:</span>
+                                    <span className={`font-medium ${userAccepted ? 'text-green-600' : 'text-gray-500'}`}>
+                                        {userAccepted ? '✓ Accepted' : 'Pending'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Other party:</span>
+                                    <span className={`font-medium ${otherAccepted ? 'text-green-600' : 'text-gray-500'}`}>
+                                        {otherAccepted ? '✓ Accepted' : 'Pending'}
+                                    </span>
+                                </div>
 
-                        {userAccepted && !otherAccepted && (
-                            <p className="text-sm text-center text-gray-600 dark:text-gray-400 italic">
-                                Waiting for the other party to accept...
-                            </p>
+                                {!userAccepted && (
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            onClick={() => onAccept(match.id)}
+                                            disabled={disabled}
+                                            className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Accept Match
+                                        </button>
+                                        <button
+                                            onClick={() => onReject(match.id)}
+                                            disabled={disabled}
+                                            className="flex-1 btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {disabled ? 'Rejecting...' : 'Reject'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {userAccepted && !otherAccepted && (
+                                    <p className="text-sm text-center text-gray-600 dark:text-gray-400 italic">
+                                        Waiting for the other party to accept...
+                                    </p>
+                                )}
+                            </>
                         )}
 
                         {/* Item Returned Button - Only for owner when both accepted */}
