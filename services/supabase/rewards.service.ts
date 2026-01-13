@@ -87,6 +87,33 @@ export async function issueMatchReward(
 
     if (txError) throw txError;
 
+    // Update user's reward balance using RPC
+    const { error: balanceError } = await supabase
+        .rpc('increment_user_balance', {
+            p_user_id: userId,
+            p_amount: finalPoints
+        });
+
+    if (balanceError) {
+        console.error('Error updating user balance:', balanceError);
+        // Try direct update as fallback
+        const { data: currentUser } = await supabase
+            .from('users')
+            .select('reward_balance')
+            .eq('id', userId)
+            .single();
+
+        if (currentUser) {
+            const newBalance = (currentUser.reward_balance || 0) + finalPoints;
+            await supabase
+                .from('users')
+                .update({ reward_balance: newBalance })
+                .eq('id', userId);
+        }
+    }
+
+    console.log(`Issued ${finalPoints} points to user ${userId} for match ${matchId}`);
+
     // Update match
     const { error: matchError } = await supabase
         .from('matches')
