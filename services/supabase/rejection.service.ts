@@ -22,16 +22,28 @@ export async function rejectMatch(
     feedback?: RejectionFeedback
 ): Promise<{ success: boolean; nextMatch?: any; error?: string }> {
     try {
+        console.log('rejectMatch called:', { matchId, userId, feedback });
+
         // 1. Get the match details
         const { data: match, error: matchError } = await supabase
             .from('matches')
-            .select('*, lost_item_id, found_item_id, match_score')
+            .select('*')
             .eq('id', matchId)
             .single();
 
-        if (matchError || !match) {
+        console.log('Match query result:', { match, matchError });
+
+        if (matchError) {
+            console.error('Match query error:', matchError);
+            return { success: false, error: `Match query failed: ${matchError.message}` };
+        }
+
+        if (!match) {
+            console.error('Match not found for ID:', matchId);
             return { success: false, error: 'Match not found' };
         }
+
+        console.log('Match found:', match);
 
         // 2. Update match status to rejected
         const { error: updateError } = await supabase
@@ -45,8 +57,11 @@ export async function rejectMatch(
             .eq('id', matchId);
 
         if (updateError) {
+            console.error('Match update error:', updateError);
             return { success: false, error: updateError.message };
         }
+
+        console.log('Match status updated to rejected');
 
         // 3. Add to rejected_pairs blacklist
         await addToRejectedPairs(
