@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { supabaseAdmin } from './client';
 
 export interface RejectionFeedback {
     reason: 'wrong_item' | 'wrong_brand' | 'wrong_location' | 'already_returned' | 'other';
@@ -25,7 +25,7 @@ export async function rejectMatch(
         console.log('rejectMatch called:', { matchId, userId, feedback });
 
         // 1. Get the match details
-        const { data: match, error: matchError } = await supabase
+        const { data: match, error: matchError } = await supabaseAdmin
             .from('matches')
             .select('*')
             .eq('id', matchId)
@@ -46,7 +46,7 @@ export async function rejectMatch(
         console.log('Match found:', match);
 
         // 2. Update match status to rejected
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('matches')
             .update({
                 status: 'rejected',
@@ -107,7 +107,7 @@ export async function addToRejectedPairs(
 ): Promise<void> {
     console.log('Adding to rejected pairs:', { lostItemId, foundItemId, rejectedBy, feedback });
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('rejected_pairs')
         .insert({
             lost_item_id: lostItemId,
@@ -136,7 +136,7 @@ export async function isRejectedPair(
     lostItemId: string,
     foundItemId: string
 ): Promise<boolean> {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .rpc('is_rejected_pair', {
             p_lost_item_id: lostItemId,
             p_found_item_id: foundItemId
@@ -155,7 +155,7 @@ export async function getRejectedPairsForItem(
     const column = itemType === 'lost' ? 'lost_item_id' : 'found_item_id';
     const oppositeColumn = itemType === 'lost' ? 'found_item_id' : 'lost_item_id';
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('rejected_pairs')
         .select(oppositeColumn)
         .eq(column, itemId);
@@ -177,7 +177,7 @@ async function updateRejectionStats(
 ): Promise<void> {
     console.log('Updating rejection stats:', { userId, matchScore });
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .rpc('update_rejection_stats', {
             p_user_id: userId,
             p_match_score: matchScore || null
@@ -195,7 +195,7 @@ async function updateRejectionStats(
  * Update user acceptance statistics
  */
 export async function updateAcceptanceStats(userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
         .rpc('update_acceptance_stats', {
             p_user_id: userId
         });
@@ -209,7 +209,7 @@ export async function updateAcceptanceStats(userId: string): Promise<void> {
  * Get user rejection statistics
  */
 export async function getUserRejectionStats(userId: string): Promise<RejectionStats | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('user_rejection_stats')
         .select('*')
         .eq('user_id', userId)
@@ -254,7 +254,7 @@ async function findNextBestMatch(
  * Get all rejected pairs (admin only)
  */
 export async function getAllRejectedPairs(limit: number = 100): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('rejected_pairs')
         .select(`
             *,
@@ -277,7 +277,7 @@ export async function getAllRejectedPairs(limit: number = 100): Promise<any[]> {
  * Get users with suspicious rejection patterns (admin only)
  */
 export async function getSuspiciousUsers(): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('user_rejection_stats')
         .select(`
             *,
