@@ -29,7 +29,7 @@ export async function rejectMatch(
             .from('matches')
             .select('*')
             .eq('id', matchId)
-            .single();
+            .maybeSingle();
 
         console.log('Match query result:', { match, matchError });
 
