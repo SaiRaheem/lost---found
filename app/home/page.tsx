@@ -10,6 +10,7 @@ import { useAuthProtection } from '@/hooks/useAuthProtection';
 import { Search, AlertCircle, Package, TrendingUp, ArrowRight, Gift, Trophy } from 'lucide-react';
 import { getUserRewardBalance } from '@/services/supabase/rewards.service';
 import { supabase } from '@/services/supabase/client';
+import InstallPrompt from '@/components/pwa/InstallPrompt';
 
 export default function HomePage() {
     const isLoading = useAuthProtection();
@@ -194,6 +195,9 @@ export default function HomePage() {
                     </Link>
                 </div>
             </div>
+
+            {/* PWA Install Prompt */}
+            <InstallPrompt />
         </Layout>
     );
 }
