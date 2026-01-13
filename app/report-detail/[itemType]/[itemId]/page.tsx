@@ -284,7 +284,7 @@ export default function ReportDetailPage() {
     };
 
     const handleMarkReturned = async () => {
-        if (confirm('Are you sure you want to mark this item as returned? This will close all chats.')) {
+        if (confirm('Are you sure you want to mark this item as returned? This will issue rewards to the finder.')) {
             try {
                 // Update current item to returned
                 await updateItemStatus(itemId, itemType, 'returned');
@@ -293,25 +293,44 @@ export default function ReportDetailPage() {
                     setItem({ ...item, status: 'returned' });
                 }
 
-                // Update matched item(s) to returned as well
+                // Update matched item(s) to returned and issue rewards
                 const acceptedMatches = matches.filter(m => m.owner_accepted && m.finder_accepted);
                 for (const match of acceptedMatches) {
                     try {
+                        // Issue reward to finder
+                        const finderId = itemType === 'lost' ? match.found_item?.user_id : match.lost_item?.user_id;
+                        const lostItem = itemType === 'lost' ? item : match.lost_item;
+
+                        if (finderId && lostItem) {
+                            const itemCategory = lostItem.item_category || 'Other';
+                            const itemLostAt = new Date(lostItem.datetime_lost);
+
+                            const { issueMatchReward } = await import('@/services/supabase/rewards.service');
+                            await issueMatchReward(
+                                match.id,
+                                finderId,
+                                itemCategory,
+                                itemLostAt,
+                                0 // bonus points
+                            );
+
+                            console.log(`✅ Issued reward to finder ${finderId} for match ${match.id}`);
+                        }
+
+                        // Update matched item status
                         if (itemType === 'lost') {
-                            // Update the matched found item
                             await updateItemStatus(match.found_item_id, 'found', 'returned');
                             console.log(`✅ Updated matched found item ${match.found_item_id} to returned`);
                         } else {
-                            // Update the matched lost item
                             await updateItemStatus(match.lost_item_id, 'lost', 'returned');
                             console.log(`✅ Updated matched lost item ${match.lost_item_id} to returned`);
                         }
                     } catch (error) {
-                        console.error('Error updating matched item status:', error);
+                        console.error('Error updating matched item or issuing reward:', error);
                     }
                 }
 
-                alert('Item marked as returned!');
+                alert('Item marked as returned! Rewards have been issued to the finder.');
             } catch (error) {
                 console.error('Error marking as returned:', error);
                 alert('Failed to mark item as returned');
