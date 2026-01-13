@@ -1,4 +1,4 @@
-import { supabaseAdmin } from './client';
+import { supabaseAdmin } from './admin';
 
 export interface RejectionFeedback {
     reason: 'wrong_item' | 'wrong_brand' | 'wrong_location' | 'already_returned' | 'other';
