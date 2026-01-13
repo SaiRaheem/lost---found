@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import { getCurrentUser } from '@/services/supabase/client';
 import { getUserRewardBalance, getUserRewardTransactions, getRewardStatistics } from '@/services/supabase/rewards.service';
+import { useAuthProtection } from '@/hooks/useAuthProtection';
 
 interface Transaction {
     id: string;
@@ -19,6 +20,7 @@ interface Transaction {
 
 export default function RewardsPage() {
     const router = useRouter();
+    const authLoading = useAuthProtection();
     const [isLoading, setIsLoading] = useState(true);
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -92,7 +94,7 @@ export default function RewardsPage() {
         ? transactions
         : transactions.filter(tx => tx.type === filter);
 
-    if (isLoading) {
+    if (authLoading || isLoading) {
         return (
             <Layout showNotifications={true}>
                 <div className="flex items-center justify-center min-h-screen">

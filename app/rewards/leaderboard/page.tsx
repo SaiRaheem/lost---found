@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '@/components/layout/Layout';
 import { getLeaderboard } from '@/services/supabase/rewards.service';
 import { supabase } from '@/services/supabase/client';
+import { useAuthProtection } from '@/hooks/useAuthProtection';
 
 interface LeaderboardUser {
     rank: number;
@@ -18,6 +19,7 @@ interface LeaderboardUser {
 
 export default function LeaderboardPage() {
     const router = useRouter();
+    const authLoading = useAuthProtection();
     const [timeframe, setTimeframe] = useState('all-time');
     const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export default function LeaderboardPage() {
 
     const currentUser = leaderboard.find(u => u.id === currentUserId);
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <Layout>
                 <div className="container mx-auto px-4 py-6 max-w-4xl pb-24 md:pb-6">
@@ -145,8 +147,8 @@ export default function LeaderboardPage() {
                             key={tf.id}
                             onClick={() => setTimeframe(tf.id)}
                             className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${timeframe === tf.id
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                                 }`}
                         >
                             {tf.label}
@@ -215,8 +217,8 @@ export default function LeaderboardPage() {
                                 <div
                                     key={user.id}
                                     className={`p-3 rounded-lg transition-all ${user.id === currentUserId
-                                            ? 'bg-primary/10 border-2 border-primary'
-                                            : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        ? 'bg-primary/10 border-2 border-primary'
+                                        : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
