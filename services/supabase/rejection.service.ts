@@ -190,7 +190,7 @@ export async function getRejectedPairsForItem(
         return [];
     }
 
-    return data?.map(row => row[oppositeColumn]) || [];
+    return data?.map((row: any) => row[oppositeColumn]) || [];
 }
 
 /**

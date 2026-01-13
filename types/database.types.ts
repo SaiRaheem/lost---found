@@ -77,7 +77,7 @@ export interface Match {
     breakdown: MatchBreakdown;
     owner_accepted: boolean;
     finder_accepted: boolean;
-    status: 'pending' | 'active' | 'success' | 'closed';
+    status: 'pending' | 'active' | 'success' | 'closed' | 'rejected';
     chat_created: boolean;
     created_at: string;
     // Rewards system properties

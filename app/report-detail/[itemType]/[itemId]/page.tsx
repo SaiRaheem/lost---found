@@ -301,7 +301,7 @@ export default function ReportDetailPage() {
                         const finderId = itemType === 'lost' ? match.found_item?.user_id : match.lost_item?.user_id;
                         const lostItem = itemType === 'lost' ? item : match.lost_item;
 
-                        if (finderId && lostItem) {
+                        if (finderId && lostItem && 'datetime_lost' in lostItem) {
                             const itemCategory = lostItem.item_category || 'Other';
                             const itemLostAt = new Date(lostItem.datetime_lost);
 
