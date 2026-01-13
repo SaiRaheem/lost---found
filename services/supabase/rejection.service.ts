@@ -63,7 +63,32 @@ export async function rejectMatch(
 
         console.log('Match status updated to rejected');
 
-        // 3. Add to rejected_pairs blacklist
+        // 3. Update both items back to 'active' status
+        console.log('Updating item statuses to active...');
+
+        const { error: lostItemError } = await supabaseAdmin
+            .from('lost_items')
+            .update({ status: 'active' })
+            .eq('id', match.lost_item_id);
+
+        if (lostItemError) {
+            console.error('Error updating lost item status:', lostItemError);
+        } else {
+            console.log('Lost item status updated to active');
+        }
+
+        const { error: foundItemError } = await supabaseAdmin
+            .from('found_items')
+            .update({ status: 'active' })
+            .eq('id', match.found_item_id);
+
+        if (foundItemError) {
+            console.error('Error updating found item status:', foundItemError);
+        } else {
+            console.log('Found item status updated to active');
+        }
+
+        // 4. Add to rejected_pairs blacklist
         await addToRejectedPairs(
             match.lost_item_id,
             match.found_item_id,
@@ -71,16 +96,16 @@ export async function rejectMatch(
             feedback
         );
 
-        // 4. Update rejection stats
+        // 5. Update rejection stats
         await updateRejectionStats(userId, match.match_score);
 
-        // 5. Check for abuse
+        // 6. Check for abuse
         const isAbusive = await checkForAbuse(userId);
         if (isAbusive) {
             console.warn(`User ${userId} flagged for suspicious rejection patterns`);
         }
 
-        // 6. Find next best match
+        // 7. Find next best match
         const nextMatch = await findNextBestMatch(
             match.lost_item_id,
             match.found_item_id
