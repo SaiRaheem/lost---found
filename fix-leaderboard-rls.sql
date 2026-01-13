@@ -1,9 +1,11 @@
 -- Fix RLS policies on users table to allow leaderboard access
 -- Current issue: Non-admin users can only see their own data
 
--- Drop existing restrictive policies
+-- Drop ALL existing policies on users table
 DROP POLICY IF EXISTS "Users can view own profile" ON users;
 DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON users;
+DROP POLICY IF EXISTS "Users can view leaderboard data" ON users;
 
 -- Allow all authenticated users to view basic user info for leaderboard
 CREATE POLICY "Users can view leaderboard data"
