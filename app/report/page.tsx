@@ -152,11 +152,11 @@ function ReportPageContent() {
 
             // Upload image if selected
             let imageUrl: string | undefined;
-            let embedding: number[] | undefined;
+            let embedding: number[] | null | undefined;
 
             if (selectedImage) {
                 try {
-                    const tempId = `temp - ${Date.now()} `;
+                    const tempId = `temp-${Date.now()}`;
                     imageUrl = await uploadItemImage(selectedImage, user.id, tempId);
 
                     // Use pre-extracted embedding or extract now
@@ -164,7 +164,15 @@ function ReportPageContent() {
                         embedding = imageEmbedding;
                     } else {
                         console.log('Extracting image embedding...');
-                        embedding = await extractImageEmbedding(selectedImage);
+                        const extractedEmbedding = await extractImageEmbedding(selectedImage);
+
+                        if (extractedEmbedding) {
+                            embedding = extractedEmbedding;
+                            console.log('✅ Image embedding extracted successfully');
+                        } else {
+                            console.warn('⚠️ AI model unavailable - continuing without embedding');
+                            embedding = undefined; // No embedding available
+                        }
                     }
                 } catch (uploadError) {
                     console.error('Image upload error:', uploadError);
@@ -187,7 +195,7 @@ function ReportPageContent() {
                 gps_latitude: formData.gps_latitude,
                 gps_longitude: formData.gps_longitude,
                 image_url: imageUrl,
-                image_embedding: embedding,
+                image_embedding: embedding || undefined, // Convert null to undefined
                 status: 'active' as const,
             };
 

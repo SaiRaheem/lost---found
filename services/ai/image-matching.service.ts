@@ -35,22 +35,31 @@ export async function loadImageModel(): Promise<void> {
         console.log('MobileNet model loaded successfully');
     } catch (error) {
         console.error('Error loading MobileNet model:', error);
-        throw error;
+        console.warn('⚠️ AI features disabled. Image uploads will work but without similarity matching.');
+        // Don't throw - allow app to continue without AI features
+        model = null;
     }
 }
 
 /**
  * Extract image embedding (feature vector) from an image
  * @param imageElement - HTML Image element or File
- * @returns 1024-dimensional feature vector
+ * @returns 1024-dimensional feature vector, or null if model unavailable
  */
 export async function extractImageEmbedding(
     imageElement: HTMLImageElement | File
-): Promise<number[]> {
+): Promise<number[] | null> {
     try {
-        // Ensure model is loaded
+        // Try to ensure model is loaded
         if (!model) {
+            console.log('Model not loaded, attempting to load...');
             await loadImageModel();
+        }
+
+        // If still no model after trying to load, return null gracefully
+        if (!model) {
+            console.warn('⚠️ AI model unavailable. Skipping image embedding extraction.');
+            return null;
         }
 
         let img: HTMLImageElement;
@@ -84,7 +93,9 @@ export async function extractImageEmbedding(
         return Array.from(embeddingArray);
     } catch (error) {
         console.error('Error extracting image embedding:', error);
-        throw error;
+        console.warn('⚠️ Continuing without image embedding');
+        // Return null instead of throwing - allow upload to continue
+        return null;
     }
 }
 
@@ -171,20 +182,20 @@ export function urlToImage(url: string): Promise<HTMLImageElement> {
 /**
  * Batch process multiple images
  * @param images - Array of image files or elements
- * @returns Array of embeddings
+ * @returns Array of embeddings (null for failed extractions)
  */
 export async function batchExtractEmbeddings(
     images: (HTMLImageElement | File)[]
-): Promise<number[][]> {
-    const embeddings: number[][] = [];
+): Promise<(number[] | null)[]> {
+    const embeddings: (number[] | null)[] = [];
 
     for (const image of images) {
         try {
             const embedding = await extractImageEmbedding(image);
-            embeddings.push(embedding);
+            embeddings.push(embedding); // Can be null
         } catch (error) {
             console.error('Error processing image:', error);
-            embeddings.push([]); // Empty embedding on error
+            embeddings.push(null); // Null embedding on error
         }
     }
 
