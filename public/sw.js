@@ -59,6 +59,42 @@ self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
+    // Skip chrome-extension and other unsupported schemes
+    if (!url.protocol.startsWith('http')) {
+        console.log('[SW] Skipping non-http(s) request:', url.protocol);
+        return;
+    }
+
+    // NEVER cache POST, PUT, DELETE, PATCH requests (uploads, mutations)
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+        console.log('[SW] Network-only for', request.method, 'request:', url.href);
+        return event.respondWith(fetch(request).catch(error => {
+            console.error('[SW] Network request failed:', error);
+            return new Response(JSON.stringify({
+                error: 'Network request failed',
+                message: 'Unable to connect to server. Please check your internet connection.'
+            }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }));
+    }
+
+    // Never cache Supabase auth/API/Storage endpoints
+    if (url.hostname.includes('supabase.co')) {
+        console.log('[SW] Network-only for Supabase:', url.href);
+        return event.respondWith(fetch(request).catch(error => {
+            console.error('[SW] Supabase request failed:', error);
+            return new Response(JSON.stringify({
+                error: 'Service temporarily unavailable',
+                message: 'Supabase is currently unreachable. Please try again.'
+            }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }));
+    }
+
     // Never cache auth endpoints
     if (AUTH_ENDPOINTS.some(endpoint => url.pathname.startsWith(endpoint))) {
         console.log('[SW] Network-only for auth:', url.pathname);
@@ -74,7 +110,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Stale-while-revalidate for images
+    // Stale-while-revalidate for images (but not from Supabase storage)
     if (request.destination === 'image') {
         event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE));
         return;
@@ -130,7 +166,8 @@ async function networkFirst(request, cacheName, timeout = 3000) {
 
         const response = await Promise.race([networkPromise, timeoutPromise]);
 
-        if (response.ok) {
+        // Only cache GET requests with successful responses
+        if (response.ok && request.method === 'GET') {
             cache.put(request, response.clone());
         }
         return response;
@@ -146,6 +183,17 @@ async function networkFirst(request, cacheName, timeout = 3000) {
         if (request.mode === 'navigate') {
             const offlinePage = await cache.match('/offline.html');
             if (offlinePage) return offlinePage;
+        }
+
+        // Return JSON error for API requests
+        if (request.url.includes('/api/') || request.url.includes('supabase.co')) {
+            return new Response(JSON.stringify({
+                error: 'Network Error',
+                message: 'Unable to connect. Please check your internet connection.'
+            }), {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
 
         return new Response('Offline', { status: 503 });

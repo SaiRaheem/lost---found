@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
@@ -12,6 +12,7 @@ type AuthMode = 'signin' | 'signup';
 
 const AuthForm: React.FC = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [mode, setMode] = useState<AuthMode>('signin');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -27,6 +28,14 @@ const AuthForm: React.FC = () => {
     const [signupEmail, setSignupEmail] = useState('');
     const [signupPassword, setSignupPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Check for session expired error on mount
+    useEffect(() => {
+        const errorParam = searchParams?.get('error');
+        if (errorParam === 'session_expired') {
+            setError('⏰ Your session expired. Please sign in again.');
+        }
+    }, [searchParams]);
 
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,8 +64,15 @@ const AuthForm: React.FC = () => {
             window.location.href = '/home';
         } catch (err: any) {
             console.error('Sign in error:', err);
-            // Provide user-friendly error messages
-            if (err.message?.includes('Invalid login credentials')) {
+
+            // Check for service unavailability errors
+            if (err.name === 'AuthRetryableFetchError' ||
+                err.message?.includes('503') ||
+                err.message?.includes('Service temporarily unavailable')) {
+                setError('🔌 Server is temporarily unavailable. Please try again in a few minutes.');
+            } else if (err.message?.includes('Network') || err.message?.includes('Failed to fetch')) {
+                setError('🌐 Network error. Please check your internet connection and try again.');
+            } else if (err.message?.includes('Invalid login credentials')) {
                 setError('❌ Wrong email or password. Please check and try again.');
             } else if (err.message?.includes('Email not confirmed')) {
                 setError('📧 Please verify your email first. Check your inbox for the verification link.');
@@ -137,7 +153,15 @@ const AuthForm: React.FC = () => {
             setMode('signin');
         } catch (err: any) {
             console.error('Sign up error:', err);
-            if (err.message && (err.message.includes('already registered') || err.message.includes('User already registered'))) {
+
+            // Check for service unavailability errors
+            if (err.name === 'AuthRetryableFetchError' ||
+                err.message?.includes('503') ||
+                err.message?.includes('Service temporarily unavailable')) {
+                setError('🔌 Server is temporarily unavailable. Please try again in a few minutes.');
+            } else if (err.message?.includes('Network') || err.message?.includes('Failed to fetch')) {
+                setError('🌐 Network error. Please check your internet connection and try again.');
+            } else if (err.message && (err.message.includes('already registered') || err.message.includes('User already registered'))) {
                 setError('⚠️ This email is already registered.\n\n👉 Please use the "Sign In" tab to log in with your password.');
             } else if (err.message && err.message.includes('email')) {
                 setError('Invalid email address. Please check and try again.');

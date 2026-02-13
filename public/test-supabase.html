@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Supabase Connection Diagnostic</h1>
+        <p class="subtitle">Test your Supabase connection and troubleshoot issues</p>
+
+        <div class="info-box">
+            <strong>ℹ️ Important:</strong> This page tests your Supabase connection without needing authentication.
+            It will help identify if your Supabase instance is running properly.
+        </div>
+
+        <div class="test-section">
+            <h3>Configuration Check</h3>
+            <div id="config-status" class="status pending">⏳ Checking configuration...</div>
+            <div id="config-details"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Supabase Health Check</h3>
+            <button id="test-connection" onclick="testSupabaseConnection()">
+                🚀 Test Connection
+            </button>
+            <div id="health-status" class="status pending" style="display: none;">
+                ⏳ Testing connection...
+            </div>
+            <div id="health-details"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>What to do if tests fail:</h3>
+            <div class="warning-box">
+                <strong>⚠️ If Supabase returns 503 errors:</strong>
+                <ol>
+                    <li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+                    <li>Select your project: <code>jmfskxjamgyxnkxrdgpa</code></li>
+                    <li>If it shows "Paused", click <strong>"Resume Project"</strong></li>
+                    <li>Wait 2-3 minutes for the project to fully start</li>
+                    <li>Come back here and click "Test Connection" again</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section" id="logs-section" style="display: none;">
+            <h3>Detailed Logs</h3>
+            <pre id="logs"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Configuration check
+        const SUPABASE_URL = 'https://jmfskxjamgyxnkxrdgpa.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptZnNreGphbWd5eG5reHJkZ3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTIwMzEsImV4cCI6MjA4MzI2ODAzMX0.QaQh_5OXSrZJWIMHlpxSzd7KnzUEdDJrvqJE3euS4Z4';
+
+        let logs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] [${type.toUpperCase()}] ${message}`);
+            updateLogsDisplay();
+        }
+
+        function updateLogsDisplay() {
+            const logsSection = document.getElementById('logs-section');
+            const logsElement = document.getElementById('logs');
+            logsSection.style.display = 'block';
+            logsElement.textContent = logs.join('\n');
+        }
+
+        // Check configuration on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const configStatus = document.getElementById('config-status');
+            const configDetails = document.getElementById('config-details');
+
+            if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+                configStatus.className = 'status success';
+                configStatus.textContent = '✅ Configuration found';
+                configDetails.innerHTML = `
+                    <p><strong>Supabase URL:</strong> ${SUPABASE_URL}</p>
+                    <p><strong>Anon Key:</strong> ${SUPABASE_ANON_KEY.substring(0, 20)}...</p>
+                `;
+                addLog('Configuration check passed', 'success');
+            } else {
+                configStatus.className = 'status error';
+                configStatus.textContent = '❌ Configuration missing';
+                configDetails.innerHTML = `
+                    <p style="color: #721c24;">Missing environment variables. Check your .env.local file.</p>
+                `;
+                addLog('Configuration check failed - missing env variables', 'error');
+            }
+        });
+
+        async function testSupabaseConnection() {
+            const button = document.getElementById('test-connection');
+            const healthStatus = document.getElementById('health-status');
+            const healthDetails = document.getElementById('health-details');
+
+            button.disabled = true;
+            button.innerHTML = '🔄 Testing... <div class="loader"></div>';
+            healthStatus.style.display = 'block';
+            healthStatus.className = 'status pending';
+            healthStatus.textContent = '⏳ Testing connection...';
+            healthDetails.innerHTML = '';
+
+            addLog('Starting connection test...', 'info');
+
+            try {
+                // Test 1: Basic connectivity
+                addLog('Test 1: Checking basic connectivity...', 'info');
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    method: 'HEAD',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                addLog(`Response status: ${response.status}`, 'info');
+
+                if (response.ok) {
+                    healthStatus.className = 'status success';
+                    healthStatus.textContent = '✅ Supabase is running!';
+                    healthDetails.innerHTML = `
+                        <div style="color: #155724; margin-top: 10px;">
+                            <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                            <p><strong>Server:</strong> Supabase is online and responding</p>
+                            <p>✓ Your application should work correctly now!</p>
+                        </div>
+                    `;
+                    addLog('Connection test PASSED - Supabase is healthy', 'success');
+                } else if (response.status === 503) {
+                    healthStatus.className = 'status error';
+                    healthStatus.textContent = '❌ Supabase is unavailable (503)';
+                    healthDetails.innerHTML = `
+                        <div style="color: #721c24; margin-top: 10px;">
+                            <p><strong>Status:</strong> 503 Service Unavailable</p>
+                            <p><strong>Issue:</strong> Your Supabase project is likely paused or down</p>
+                            <p><strong>Solution:</strong></p>
+                            <ol>
+                                <li>Go to <a href="https://supabase.com/dashboard/project/jmfskxjamgyxnkxrdgpa" target="_blank">your project dashboard</a></li>
+                                <li>Click "Resume Project" if it's paused</li>
+                                <li>Wait 2-3 minutes for it to start</li>
+                                <li>Test again</li>
+                            </ol>
+                        </div>
+                    `;
+                    addLog('Connection test FAILED - Supabase returned 503 (Service Unavailable)', 'error');
+                } else {
+                    healthStatus.className = 'status error';
+                    healthStatus.textContent = `❌ Unexpected response: ${response.status}`;
+                    healthDetails.innerHTML = `
+                        <div style="color: #721c24; margin-top: 10px;">
+                            <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                            <p>Check your Supabase dashboard for more information.</p>
+                        </div>
+                    `;
+                    addLog(`Connection test FAILED - Unexpected status: ${response.status}`, 'error');
+                }
+
+            } catch (error) {
+                healthStatus.className = 'status error';
+                healthStatus.textContent = '❌ Connection failed';
+                healthDetails.innerHTML = `
+                    <div style="color: #721c24; margin-top: 10px;">
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>This could indicate:</p>
+                        <ul>
+                            <li>Network connectivity issues</li>
+                            <li>Firewall/CORS issues</li>
+                            <li>Supabase project is paused</li>
+                        </ul>
+                    </div>
+                `;
+                addLog(`Connection test FAILED - ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = '🚀 Test Connection';
+            }
+        }
+    </script>
+</body>
+
+</html>

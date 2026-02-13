@@ -13,50 +13,97 @@ export interface ProfileData {
 }
 
 /**
+ * Retry helper with exponential backoff
+ */
+async function retryOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+
+            // Don't retry on authentication errors (wrong password, etc)
+            if (error?.message?.includes('Invalid login credentials') ||
+                error?.message?.includes('Email not confirmed') ||
+                error?.message?.includes('User already registered')) {
+                throw error;
+            }
+
+            // Retry on network/service errors
+            if (attempt < maxRetries &&
+                (error?.name === 'AuthRetryableFetchError' ||
+                    error?.message?.includes('503') ||
+                    error?.message?.includes('Failed to fetch') ||
+                    error?.message?.includes('Network'))) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                console.log(`[Auth] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            throw error;
+        }
+    }
+
+    throw lastError;
+}
+
+/**
  * Sign up with email and password
  * Creates profile immediately if email confirmation is disabled
  * Otherwise profile is created after email verification in callback
  */
 export async function signUpWithEmail(email: string, password: string, profileData: Omit<ProfileData, 'id'>) {
-    // Create auth user with email confirmation required
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: {
-                // Store profile data in user metadata for later use
-                name: profileData.name,
-                gender: profileData.gender,
-                phone: profileData.phone,
-            }
-        },
-    });
+    // Create auth user with email confirmation required - with retry logic
+    const authData = await retryOperation(async () => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
+                data: {
+                    // Store profile data in user metadata for later use
+                    name: profileData.name,
+                    gender: profileData.gender,
+                    phone: profileData.phone,
+                }
+            },
+        });
 
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Failed to create user');
+        if (error) throw error;
+        if (!data.user) throw new Error('Failed to create user');
+        return data;
+    });
 
     // If user is immediately confirmed (email confirmation disabled in Supabase)
     // Create the profile now
-    if (authData.session) {
+    if (authData.session && authData.user) {
         console.log('User confirmed immediately, creating profile...');
-        const { error: profileError } = await supabase
-            .from('users')
-            .insert({
-                id: authData.user.id,
-                email: authData.user.email,
-                name: profileData.name,
-                gender: profileData.gender,
-                phone: profileData.phone,
-                community_type: profileData.community_type || 'common',
-                updated_at: new Date().toISOString(),
-            });
+        await retryOperation(async () => {
+            const { error } = await supabase
+                .from('users')
+                .insert({
+                    id: authData.user!.id,
+                    email: authData.user!.email,
+                    name: profileData.name,
+                    gender: profileData.gender,
+                    phone: profileData.phone,
+                    community_type: profileData.community_type || 'common',
+                    updated_at: new Date().toISOString(),
+                });
 
-        if (profileError) {
-            console.error('Profile creation error:', profileError);
-            throw new Error(`Failed to create profile: ${profileError.message}`);
-        }
-        console.log('Profile created successfully');
+            if (error) {
+                console.error('Profile creation error:', error);
+                throw new Error(`Failed to create profile: ${error.message}`);
+            }
+            console.log('Profile created successfully');
+        });
     }
     // Otherwise, profile will be created in callback after email verification
 
@@ -67,13 +114,15 @@ export async function signUpWithEmail(email: string, password: string, profileDa
  * Sign in with email and password
  */
 export async function signInWithEmail(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    });
+    return await retryOperation(async () => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
 
-    if (error) throw error;
-    return data;
+        if (error) throw error;
+        return data;
+    });
 }
 
 /**

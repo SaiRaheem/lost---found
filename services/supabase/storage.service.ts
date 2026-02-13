@@ -3,34 +3,75 @@ import { supabase } from './client';
 const BUCKET_NAME = 'item-images';
 
 /**
+ * Retry helper for storage operations
+ */
+async function retryStorageOperation<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 2,
+    baseDelay: number = 1000
+): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+
+            if (attempt < maxRetries &&
+                (error?.message?.includes('503') ||
+                    error?.message?.includes('Failed to fetch') ||
+                    error?.message?.includes('Network'))) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                console.log(`[Storage] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
+            throw error;
+        }
+    }
+
+    throw lastError;
+}
+
+/**
  * Upload an item image to Supabase Storage
  */
 export async function uploadItemImage(file: File, userId: string, itemId: string): Promise<string> {
-    try {
-        // Generate unique filename
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${userId}/${itemId}.${fileExt}`;
+    return await retryStorageOperation(async () => {
+        try {
+            // Generate unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${userId}/${itemId}.${fileExt}`;
 
-        // Upload file to storage
-        const { data, error } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: true, // Replace if exists
-            });
+            console.log('[Storage] Uploading image:', fileName);
 
-        if (error) throw error;
+            // Upload file to storage
+            const { data, error } = await supabase.storage
+                .from(BUCKET_NAME)
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: true, // Replace if exists
+                });
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(fileName);
+            if (error) {
+                console.error('[Storage] Upload error:', error);
+                throw error;
+            }
 
-        return urlData.publicUrl;
-    } catch (error) {
-        console.error('Error uploading image:', error);
-        throw error;
-    }
+            // Get public URL
+            const { data: urlData } = supabase.storage
+                .from(BUCKET_NAME)
+                .getPublicUrl(fileName);
+
+            console.log('[Storage] Upload successful:', urlData.publicUrl);
+            return urlData.publicUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    });
 }
 
 /**
