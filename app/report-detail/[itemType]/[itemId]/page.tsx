@@ -169,10 +169,18 @@ export default function ReportDetailPage() {
                     // Update local item state immediately
                     setItem(updatedItem);
 
-                    // If marked as returned, update the returned flag and show alert
+                    // If marked as returned, update the returned flag and refresh matches
                     if (updatedItem.status === 'returned') {
                         setIsReturned(true);
-                        alert('This item has been marked as returned. Chat is now closed.');
+
+                        // Refresh matches to get updated status
+                        const fetchedMatches = await getMatchesForItem(itemId, itemType);
+                        setMatches(fetchedMatches);
+
+                        // Show alert but don't block
+                        setTimeout(() => {
+                            alert('✅ This item has been marked as returned. Chat is now closed.');
+                        }, 100);
                     }
                 }
             )
@@ -496,7 +504,7 @@ export default function ReportDetailPage() {
                         currentUserId={currentUserId}
                         messages={chatMessages}
                         onSendMessage={handleSendMessage}
-                        disabled={isReturned}
+                        disabled={isReturned || matches.find(m => m.id === selectedMatchId)?.status === 'success'}
                     />
                 )}
 
