@@ -60,7 +60,6 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
     const notificationsWithDetails = await Promise.all(
         (data || []).map(async (notif) => {
             const table = notif.item_type === 'lost' ? 'lost_items' : 'found_items';
-            const userField = notif.item_type === 'lost' ? 'owner_name' : 'finder_name';
 
             // Fetch item details
             const { data: itemData } = await supabase
@@ -72,20 +71,30 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
             // Fetch other user's name from related_id (match or message)
             let otherUserName = null;
             if (notif.related_id) {
-                // Try to get from matches table with proper foreign key syntax
+                // Fetch match first
                 const { data: matchData, error: matchError } = await supabase
                     .from('matches')
-                    .select(`
-                        lost_item:lost_items!lost_item_id(owner_name),
-                        found_item:found_items!found_item_id(finder_name)
-                    `)
+                    .select('lost_item_id, found_item_id')
                     .eq('id', notif.related_id)
-                    .single();
+                    .maybeSingle(); // Use maybeSingle to avoid error on 0 rows
 
                 if (matchData && !matchError) {
+                    // Now fetch the items separately
+                    const { data: lostItemData } = await supabase
+                        .from('lost_items')
+                        .select('owner_name')
+                        .eq('id', matchData.lost_item_id)
+                        .maybeSingle();
+
+                    const { data: foundItemData } = await supabase
+                        .from('found_items')
+                        .select('finder_name')
+                        .eq('id', matchData.found_item_id)
+                        .maybeSingle();
+
                     // Get the name of the OTHER user (not the current user)
-                    const lostName = (matchData.lost_item as any)?.owner_name;
-                    const foundName = (matchData.found_item as any)?.finder_name;
+                    const lostName = lostItemData?.owner_name;
+                    const foundName = foundItemData?.finder_name;
 
                     // If current item is lost, get finder name; if found, get owner name
                     otherUserName = notif.item_type === 'lost' ? foundName : lostName;
