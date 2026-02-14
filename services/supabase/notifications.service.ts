@@ -72,20 +72,25 @@ export async function getUnreadNotifications(): Promise<Notification[]> {
             // Fetch other user's name from related_id (match or message)
             let otherUserName = null;
             if (notif.related_id) {
-                // Try to get from matches table
-                const { data: matchData } = await supabase
+                // Try to get from matches table with proper foreign key syntax
+                const { data: matchData, error: matchError } = await supabase
                     .from('matches')
-                    .select('lost_items(owner_name), found_items(finder_name)')
+                    .select(`
+                        lost_item:lost_items!lost_item_id(owner_name),
+                        found_item:found_items!found_item_id(finder_name)
+                    `)
                     .eq('id', notif.related_id)
                     .single();
 
-                if (matchData) {
+                if (matchData && !matchError) {
                     // Get the name of the OTHER user (not the current user)
-                    const lostName = (matchData.lost_items as any)?.owner_name;
-                    const foundName = (matchData.found_items as any)?.finder_name;
+                    const lostName = (matchData.lost_item as any)?.owner_name;
+                    const foundName = (matchData.found_item as any)?.finder_name;
 
                     // If current item is lost, get finder name; if found, get owner name
                     otherUserName = notif.item_type === 'lost' ? foundName : lostName;
+                } else if (matchError) {
+                    console.warn('Error fetching match data:', matchError);
                 }
             }
 
