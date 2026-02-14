@@ -333,6 +333,22 @@ export default function ReportDetailPage() {
                             await updateItemStatus(match.lost_item_id, 'lost', 'returned');
                             console.log(`✅ Updated matched lost item ${match.lost_item_id} to returned`);
                         }
+
+                        // UPDATE MATCH STATUS TO 'SUCCESS' AND CLOSE CHAT
+                        const { error: matchError } = await supabase
+                            .from('matches')
+                            .update({
+                                status: 'success',
+                                chat_created: false, // Close the chat
+                                item_returned_at: new Date().toISOString()
+                            })
+                            .eq('id', match.id);
+
+                        if (matchError) {
+                            console.error('Error updating match status:', matchError);
+                        } else {
+                            console.log(`✅ Updated match ${match.id} to success and closed chat`);
+                        }
                     } catch (error) {
                         console.error('Error updating matched item or issuing reward:', error);
                     }
