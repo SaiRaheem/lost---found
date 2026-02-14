@@ -122,14 +122,16 @@ function calculateAttributeScore(lostItem: LostItem, foundItem: FoundItem): numb
 }
 
 /**
- * Calculate purpose match score (0-10 points)
+ * Calculate purpose match score (0-8 points)
  * Compares what the item is used for using TF-IDF similarity
  */
 function calculatePurposeScore(lostItem: LostItem, foundItem: FoundItem): number {
     // If both have purpose filled, compare them
     if (lostItem.purpose && foundItem.purpose) {
-        const similarity = calculateTFIDFSimilarity(lostItem.purpose, foundItem.purpose);
-        return Math.round(similarity * MATCHING.WEIGHTS.PURPOSE);
+        // calculateTFIDFSimilarity returns 0-25, normalize to 0-1
+        const tfidfScore = calculateTFIDFSimilarity(lostItem.purpose, foundItem.purpose);
+        const similarity = tfidfScore / 25; // Normalize to 0-1
+        return Math.round(similarity * MATCHING.WEIGHTS.PURPOSE); // Scale to 0-8
     }
 
     // If only one has purpose, give partial credit (30% of max score)
