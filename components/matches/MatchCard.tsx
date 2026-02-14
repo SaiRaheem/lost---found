@@ -56,7 +56,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
 
         setIsMarkingReturned(true);
         try {
-            if (!finderId || !match.lost_item) return;
+            if (!finderId || !match.lost_item || !match.found_item) return;
 
             // Issue reward to finder
             const itemCategory = match.lost_item.item_category || 'Other';
@@ -71,11 +71,50 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                 0 // bonus points
             );
 
-            alert('✅ Item marked as returned!\n\nReward points have been issued to the finder.');
+            // Update the status of BOTH items to 'returned'
+            const { supabase } = await import('@/services/supabase/client');
+
+            // Update lost item status
+            const { error: lostError } = await supabase
+                .from('lost_items')
+                .update({ status: 'returned' })
+                .eq('id', match.lost_item_id);
+
+            if (lostError) {
+                console.error('Error updating lost item:', lostError);
+                throw new Error('Failed to update lost item status');
+            }
+
+            // Update found item status
+            const { error: foundError } = await supabase
+                .from('found_items')
+                .update({ status: 'returned' })
+                .eq('id', match.found_item_id);
+
+            if (foundError) {
+                console.error('Error updating found item:', foundError);
+                throw new Error('Failed to update found item status');
+            }
+
+            // Update match status to 'success' and close it
+            const { error: matchError } = await supabase
+                .from('matches')
+                .update({
+                    status: 'success',
+                    chat_created: false // Close the chat
+                })
+                .eq('id', match.id);
+
+            if (matchError) {
+                console.error('Error updating match:', matchError);
+            }
+
+            alert('✅ Item marked as returned!\n\n• Both items marked as returned\n• Reward points issued to finder\n• Chat closed');
 
             // Reload page to show updated status
             window.location.reload();
         } catch (error: any) {
+            console.error('Error in handleMarkAsReturned:', error);
             alert(`❌ Failed to mark as returned: ${error.message}`);
         } finally {
             setIsMarkingReturned(false);
