@@ -334,11 +334,11 @@ export default function ReportDetailPage() {
                             console.log(`✅ Updated matched lost item ${match.lost_item_id} to returned`);
                         }
 
-                        // UPDATE MATCH STATUS TO 'SUCCESS' AND CLOSE CHAT
+                        // UPDATE MATCH STATUS TO 'COMPLETED' AND CLOSE CHAT
                         const { error: matchError } = await supabase
                             .from('matches')
                             .update({
-                                status: 'success',
+                                status: 'completed',
                                 chat_created: false, // Close the chat
                                 item_returned_at: new Date().toISOString()
                             })
@@ -347,7 +347,7 @@ export default function ReportDetailPage() {
                         if (matchError) {
                             console.error('Error updating match status:', matchError);
                         } else {
-                            console.log(`✅ Updated match ${match.id} to success and closed chat`);
+                            console.log(`✅ Updated match ${match.id} to completed and closed chat`);
                         }
                     } catch (error) {
                         console.error('Error updating matched item or issuing reward:', error);
@@ -520,7 +520,7 @@ export default function ReportDetailPage() {
                         currentUserId={currentUserId}
                         messages={chatMessages}
                         onSendMessage={handleSendMessage}
-                        disabled={isReturned || matches.find(m => m.id === selectedMatchId)?.status === 'success'}
+                        disabled={isReturned || matches.find(m => m.id === selectedMatchId)?.status === 'completed'}
                     />
                 )}
 

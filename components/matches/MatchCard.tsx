@@ -96,11 +96,11 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, userRole, onAccept, onReje
                 throw new Error('Failed to update found item status');
             }
 
-            // Update match status to 'success' and close it
+            // Update match status to 'completed' and close it
             const { error: matchError } = await supabase
                 .from('matches')
                 .update({
-                    status: 'success',
+                    status: 'completed',
                     chat_created: false // Close the chat
                 })
                 .eq('id', match.id);

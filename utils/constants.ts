@@ -94,7 +94,7 @@ export const ITEM_STATUS = {
 export const MATCH_STATUS = {
     PENDING: 'pending',
     ACTIVE: 'active',
-    SUCCESS: 'success',
+    SUCCESS: 'completed',
     CLOSED: 'closed',
 } as const;
 
